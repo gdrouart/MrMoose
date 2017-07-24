@@ -72,6 +72,10 @@ To run your first fit, after launching ipython:
 will perform your first run and generate your first results! (several .pdf files and a .pkl file
 in the outputs folder)
 
+Make sure you also create a data, models and outputs folders, otherwise it will complain!
+>mkdir data
+>mkdir models
+>mkdir outputs
 
 ############################
 # Limitations, known bugs: #
