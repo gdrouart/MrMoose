@@ -1,6 +1,0 @@
-setup.py
-MrMoose.egg-info/PKG-INFO
-MrMoose.egg-info/SOURCES.txt
-MrMoose.egg-info/dependency_links.txt
-MrMoose.egg-info/requires.txt
-MrMoose.egg-info/top_level.txt
