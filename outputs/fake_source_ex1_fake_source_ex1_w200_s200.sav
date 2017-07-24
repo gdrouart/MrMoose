@@ -1,0 +1,39 @@
+AF_histo: outputs/fake_source_ex1_fake_source_ex1_w200_s200_AF_histo.pdf
+AICc: !!python/object/apply:numpy.core.multiarray.scalar
+- !!python/object/apply:numpy.dtype
+  args: [f8, 0, 1]
+  state: !!python/tuple [3, <, null, null, null, -1, -1, 0]
+- !!binary |
+  smcjjlJ7J0A=
+MCChains_plot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_MCChains.pdf
+SED_fnu_margplot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_SED_fnu_marg.pdf
+SED_fnu_plot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_SED_fnu.pdf
+SED_fnu_spaplot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_SED_fnu_spag.pdf
+SED_fnu_splitmargplot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_SED_fnu_marg_split.pdf
+SED_fnu_splitplot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_SED_fnu_split.pdf
+SED_fnu_splitspaplot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_SED_fnu_spag_split.pdf
+best_lnL: !!python/object/apply:numpy.core.multiarray.scalar
+- !!python/object/apply:numpy.dtype
+  args: [f8, 0, 1]
+  state: !!python/tuple [3, <, null, null, null, -1, -1, 0]
+- !!binary |
+  kD0bcZTa678=
+model: fake_source_ex1
+model_file: models/fake_source_ex1.mod
+nsteps: 200
+nsteps_cut: 180
+nwalkers: 200
+percentiles: [10.0, 25.0, 50.0, 75.0, 90.0]
+redshift: 0
+sampler_file: outputs/fake_source_ex1_fake_source_ex1_w200_s200.pkl
+save_struct: outputs/fake_source_ex1_fake_source_ex1_w200_s200.sav
+skip_MCChains: false
+skip_SED: false
+skip_fit: false
+skip_imaging: false
+skip_triangle: false
+source: fake_source_ex1
+source_file: data/fake_source_ex1.dat
+triangle_plot: outputs/fake_source_ex1_fake_source_ex1_w200_s200_triangle.pdf
+unit_flux: Jy
+unit_obs: Hz

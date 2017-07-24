@@ -1,0 +1,6 @@
+# filter        RA              Dec        resolution  lambda0  det_type  flux   flux_error  arrangement  component   component_number 
+74MHz(VLA)      12h00m00s       -40d00m00s       12.0 7.377042e+07 d     1.399741e-07 9.036851e-09 1          note       0          
+408MHz          12h00m00s       -40d00m00s       12.0 4.078365e+08 d     2.468303e-08 1.634557e-09 1          note       0          
+1.4GHz          12h00m00s       -40d00m00s       12.0 1.399439e+09 d     7.431021e-09 4.763989e-10 1          note       0          
+4.85GHz         12h00m00s       -40d00m00s       12.0 4.848056e+09 d     1.968329e-09 1.375087e-10 1          note       0          
+8.4GHz          12h00m00s       -40d00m00s       12.0 8.396633e+09 d     1.097409e-09 7.939377e-11 1          note       0,        
