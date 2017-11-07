@@ -17,12 +17,12 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
 
-import sys
-sys.path.append('/Library/Python/2.7/site-packages/')
-import numpy as np
-from astropy.cosmology import WMAP9 as cosmos
-from astropy import constants
-from guppy import hpy
+#import sys
+#sys.path.append('/Library/Python/2.7/site-packages/')
+#import numpy as np
+#from astropy.cosmology import WMAP9 as cosmos
+#from astropy import constants
+#from guppy import hpy
 import time
 import cPickle as pickle
 import yaml
@@ -162,7 +162,9 @@ def SED_fit(settings_file, Parallel=None):
     # calculate luminosity with uncertainties
     # save the results in a file for later use/checks
     with open(fit_struct['save_struct'], 'wb') as output:
-        yaml.dump(fit_struct, output)
+        # format the model_struct as human readable and save
+        model_sav = ut.format_sav_output(model_struct)
+        yaml.dump([fit_struct,model_sav], output)
 
     return sampler, model_struct, data_struct, filter_struct, fit_struct
 

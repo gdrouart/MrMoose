@@ -134,7 +134,7 @@ def NEDtocode(filenamein, filenameout):
 
 
 def read_filters(data_struct):
-    """Read the filters in the same structure than the data. """
+    """Read the filters and store it in a structure identical to the data. """
     filter_struct = []
     for i, elem in enumerate(data_struct):
         tmp = []

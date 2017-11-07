@@ -68,6 +68,16 @@ def second_axis_nu(x):
     return [sci_notation(x, -1) for x in v]
 
 
+def format_sav_output(mod_struct):
+    """ Transform numpy array in list in the model structure to make the yaml dump human readable"""
+    import copy
+
+    mod_struct_cop = copy.deepcopy(mod_struct)
+    for i in range(len(mod_struct)):
+        for j in mod_struct[i].keys():
+            mod_struct_cop[i][j] = np.array(mod_struct[i][j]).tolist()
+    return mod_struct_cop
+
 def format_plot_output(layout=None):
     # TODO add a precision mode - error smaller than symbols
     """ Choose a layout for the graphics """
