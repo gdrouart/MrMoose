@@ -1,10 +1,14 @@
+"""
+Simplest example to generate a .fit, .mod and .dat file to feed in MrMoose for 
+demonstration. The model consists of a single power law and five data points 
+from a source at z=1
+"""
+
 import models as md
 import numpy as np
 import mm_utilities as mm
 import read_files as rd
 
-#def fake_sync_source():
-# define the parameters of the sync law and create
 alpha = -1.0
 norm = 1.0
 
@@ -50,10 +54,11 @@ with open('data/fake_source_ex1b.dat', 'wb') as fake:
 with open('fake_source_ex1b.fit', 'wb') as fake:
     fake.write('source_file: data/fake_source_ex1b.dat \n')
     fake.write('model_file: models/fake_source_ex1b.mod \n')
-    fake.write('redshift: '+str(redshift)+'\n')
-    fake.write('nwalkers: 200 \n')
-    fake.write('nsteps: 200 \n')
-    fake.write('nsteps_cut: 180 \n')
+    fake.write('all_same_redshift: True \n')
+    fake.write('redshift: ['+str(redshift)+'] \n')
+    fake.write('nwalkers: 20 \n')
+    fake.write('nsteps: 20 \n')
+    fake.write('nsteps_cut: 18 \n')
     fake.write('percentiles: [10., 25., 50., 75., 90.] \n')
     fake.write('skip_imaging: False \n')
     fake.write('skip_fit: False \n')
@@ -68,6 +73,3 @@ with open('models/fake_source_ex1b.mod', 'wb') as fake:
     fake.write('sync_law  2 \n')
     fake.write('$N$       -25  -15 \n')
     fake.write('$\\alpha$  -2.0  0.0 \n')
-
-#if __name__ == "__main__":
-#    fake_sync_source()

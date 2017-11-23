@@ -1,3 +1,9 @@
+"""
+Example to generate a .fit, .mod and .dat file to feed in MrMoose for 
+demonstration. The model consists of a single power-law and a black body
+with 12 data points of which 1 is an upper limit, both from unresolved, 
+blended components at z=0
+"""
 import models as md
 import numpy as np
 import mm_utilities as mm
@@ -12,10 +18,10 @@ norm_bb = 1.0
 temp = 40
 
 nu = 10**np.linspace(6, 16, 10000)  # frequency range
-redshift = 0
+redshift = [0., 0.]
 
 # generate with the provided model
-fnu = md.sync_law(nu, [norm_sync, alpha], redshift) + md.BB_law(nu, [norm_bb, temp], redshift)
+fnu = md.sync_law(nu, [norm_sync, alpha], redshift[0]) + md.BB_law(nu, [norm_bb, temp], redshift[1])
 #print md.sync_law(nu, [norm_sync, alpha], redshift)
 #print
 #print md.BB_law(nu, [norm_bb, temp], redshift)
@@ -77,10 +83,11 @@ with open('data/fake_source_ex3.dat', 'wb') as fake:
 with open('fake_source_ex3.fit', 'wb') as fake:
     fake.write('source_file: data/fake_source_ex3.dat \n')
     fake.write('model_file: models/fake_source_ex3.mod \n')
+    fake.write('all_same_redshift: True \n')
     fake.write('redshift: '+str(redshift)+'\n')
-    fake.write('nwalkers: 100 \n')
-    fake.write('nsteps: 400 \n')
-    fake.write('nsteps_cut: 380 \n')
+    fake.write('nwalkers: 10 \n')
+    fake.write('nsteps: 40 \n')
+    fake.write('nsteps_cut: 38 \n')
     fake.write('percentiles: [10., 25., 50., 75., 90.] \n')
     fake.write('skip_imaging: False \n')
     fake.write('skip_fit: False \n')

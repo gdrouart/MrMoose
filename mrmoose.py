@@ -34,13 +34,15 @@ import read_files as rd
 import mm_utilities as ut
 import analysis as an
 
-from pycallgraph import PyCallGraph
-from pycallgraph.output import GraphvizOutput
-from pycallgraph import Config
-from pycallgraph import GlobbingFilter
+#from pycallgraph import PyCallGraph
+#from pycallgraph.output import GraphvizOutput
+#from pycallgraph import Config
+#from pycallgraph import GlobbingFilter
+
 
 # TODO double check the autocorrelation time
 # TODO burn in concept good, to put back - aside for now
+
 
 def SED_fit(settings_file, Parallel=None):
     """
@@ -71,8 +73,13 @@ def SED_fit(settings_file, Parallel=None):
     data_struct = rd.read_data(fit_struct['source_file'], [fit_struct['unit_flux'], fit_struct['unit_obs']])
     model_struct = rd.read_mod_file(fit_struct['model_file'])
 
-    ### reading the filter database ###
+    # reading the filter database
     filter_struct = rd.read_filters(data_struct)
+
+    for i in range(len(data_struct)):
+        print ""
+        print data_struct[i]
+        print ""
 
     if fit_struct['skip_imaging'] == False:
         try:
@@ -83,6 +90,28 @@ def SED_fit(settings_file, Parallel=None):
     else:
         print 'skip data imaging'
         pass
+
+    # check if the redshift option and list are well provided
+    if fit_struct['all_same_redshift'] is True:
+        if fit_struct['redshift'].count(fit_struct['redshift'][0]) != len(fit_struct['redshift']):
+            raise ValueError('Too many redshift values in list, are components at different redshift or are values identical?')
+    else:
+        if len(fit_struct['redshift']) != len(model_struct):
+            raise ValueError('The number of provided redshifts and model components does not match!')
+
+    # TODO: check the conditions!
+    # check if the functions to be used exist and correspond to the redshift list
+    for i, z in enumerate(fit_struct['redshift']):
+        if z >= 0:
+            if model_struct[i]['func'].find('_z') < 0:
+                pass
+            else:
+                raise ValueError('you assigned a function taking the redshift as a free parameter but redshift is known!')
+        else:
+            if model_struct[i]['func'].find('_z') > 0:
+                pass
+            else:
+                raise ValueError('For the redshift to be a free parameter, assign the function with the _z extension!')
 
     ### init the parameter structure ###
     # Get the initial guess, which is chosen to be the median
@@ -121,7 +150,7 @@ def SED_fit(settings_file, Parallel=None):
 
     ### plot the results ###
     layout = 'publication'
-    AF_cut = 0.25   # set a value between 0 and 1, negative means a cut at mean/2
+    AF_cut = -1.   # set a value between 0 and 1, negative means a cut at mean/2
     histo=True
 
     # MC Chains plot to check convergence
@@ -144,7 +173,7 @@ def SED_fit(settings_file, Parallel=None):
         gp.SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, fit_struct, layout=layout, AF_cut=AF_cut)
         #gp.SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_struct, layout=layout)
 
-        if len(data_struct) > 1:
+        if len(data_struct) > 2:
             gp.split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, layout=layout)
             gp.split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, fit_struct, AF_cut=AF_cut, layout=layout)
             # gp.split_SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_struct)  #TODO

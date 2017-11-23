@@ -1,11 +1,16 @@
+"""
+Example to generate a .fit, .mod and .dat file to feed in MrMoose for 
+demonstration. The model consists of two single power-laws, two black bodies and
+a AGN modified black body, with 18 data points of which 3 are an upper limits, 
+and a mixture of unresolved and blended/spatially identified components, all at z=2. 
+This example is inspired from a real case from Falkendal et al. 2018 paper. 
+"""
+
 import models as md
 import numpy as np
 import mm_utilities as mm
 import read_files as rd
 
-#def fake_sync_source():
-# define the parameters of the model and create
-# the normalisation will effectively be  values-23 due to the Jansky transformation
 norm_sync1 = 1.0  
 alpha_sync1 = -1.
 norm_sync2 = 1.0
@@ -18,17 +23,14 @@ norm_agn = -9.
 alpha_agn = -2.
 
 nu = 10**np.linspace(6, 18, 10000)  # frequency range
-redshift = 2.0
+redshift = [2.0, 2.0, 2.0, 2.0, 2.0]
 
 # generate with the provided model
-fnu = md.sync_law(nu, [norm_sync1, alpha_sync1], redshift) + \
-      md.sync_law(nu, [norm_sync2, alpha_sync2], redshift) + \
-      md.BB_law(nu, [norm_bb1, temp1], redshift) + \
-      md.BB_law(nu, [norm_bb2, temp2], redshift) + \
-      md.AGN_law(nu, [norm_agn, alpha_agn], redshift)
-#print md.sync_law(nu, [norm_sync, alpha], redshift)
-#print
-#print md.BB_law(nu, [norm_bb, temp], redshift)
+fnu = md.sync_law(nu, [norm_sync1, alpha_sync1], redshift[0]) + \
+      md.sync_law(nu, [norm_sync2, alpha_sync2], redshift[1]) + \
+      md.BB_law(nu, [norm_bb1, temp1], redshift[2]) + \
+      md.BB_law(nu, [norm_bb2, temp2], redshift[3]) + \
+      md.AGN_law(nu, [norm_agn, alpha_agn], redshift[4])
 
 # list of the filters
 filter_name = np.array(['VLA_L', 'VLA_C', 'VLA_C', 'VLA_X', 'VLA_X',
@@ -103,6 +105,7 @@ with open('data/fake_source_ex6.dat', 'wb') as fake:
 with open('fake_source_ex6.fit', 'wb') as fake:
     fake.write('source_file: data/fake_source_ex6.dat \n')
     fake.write('model_file: models/fake_source_ex6.mod \n')
+    fake.write('all_same_redshift: True \n')
     fake.write('redshift: '+str(redshift)+'\n')
     fake.write('nwalkers: 40 \n')
     fake.write('nsteps: 20 \n')

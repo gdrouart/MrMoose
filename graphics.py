@@ -17,8 +17,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
 
-import sys
-sys.path.append('/Library/Python/2.7/site-packages')
+#import sys
+#sys.path.append('/Library/Python/2.7/site-packages')
 import mm_utilities as ut
 from models import *
 
@@ -57,11 +57,11 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
     min_tab = ut.flatten_model_keyword(model_struct, 'min')
     max_tab = ut.flatten_model_keyword(model_struct, 'max')
     dim = len(name_tab)
-    if dim < 5:
+    if dim <= 5:
         max_row = dim
         max_col = 1
     else:
-        max_row = int(np.floor(dim/2))
+        max_row = int(np.ceil(dim/2.))
         max_col = 2
 
     # create a lighter version of the plot walkers only light keyword
@@ -75,23 +75,25 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
     if AF_cut >= 0:
         ind_walkers = np.where(sampler.acceptance_fraction > AF_cut)[0]
     else:
-        ind_walkers = np.where(sampler.acceptance_fraction < np.mean(sampler.acceptance_fraction)*0.5)[0]
+        AF_plot = np.mean(sampler.acceptance_fraction)*0.5
+        ind_walkers = np.where(sampler.acceptance_fraction > AF_plot)[0]
 
     fig = plt.figure()
     gs = gridspec.GridSpec(max_row, max_col)
     i_param = 0
     for i_col in range(max_col):
         for i_row in range(max_row):
-            for i in nwalkers_loop:
-                ax = plt.subplot(gs[i_row, i_col])
-                ax.plot(sampler.chain[i, :, i_param], c='grey', lw=0.3)  # plot all
-            for i in ind_walkers:
-                ax.plot(sampler.chain[i, :, i_param], c='k', lw=0.3)  # plot the "good" walkers
-            plt.setp(ax.get_xticklabels(), visible=False)
-            range_param = abs(max_tab[i_param]-min_tab[i_param])
-            ax.set_ylim(min_tab[i_param]-0.05*range_param, max_tab[i_param]+0.05*range_param)
-            ax.set_ylabel(name_tab[i_param])
-            i_param += 1
+            if i_param < dim:
+                for i in nwalkers_loop:
+                    ax = plt.subplot(gs[i_row, i_col])
+                    ax.plot(sampler.chain[i, :, i_param], c='grey', lw=0.3)  # plot all
+                for i in ind_walkers:
+                    ax.plot(sampler.chain[i, :, i_param], c='k', lw=0.3)  # plot the "good" walkers
+                plt.setp(ax.get_xticklabels(), visible=False)
+                range_param = abs(max_tab[i_param]-min_tab[i_param])
+                ax.set_ylim(min_tab[i_param]-0.05*range_param, max_tab[i_param]+0.05*range_param)
+                ax.set_ylabel(name_tab[i_param])
+                i_param += 1
         plt.setp(ax.get_xticklabels(), visible=True)  # set the last axis visible
         ax.set_xlabel('# steps')
     av_af = np.mean(sampler.acceptance_fraction)
@@ -105,7 +107,12 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
     if histo == True:
         fig1 = plt.figure()
         ax1 = fig1.add_subplot(111)
-        n, bins, patches = ax1.hist(sampler.acceptance_fraction, 20, normed=1, facecolor='black', alpha=0.75)    
+        n, bins, patches = ax1.hist(sampler.acceptance_fraction, 20, normed=1, facecolor='black', alpha=0.75)
+        if AF_cut <= 0:
+            ax1.axvline(x=np.mean(sampler.acceptance_fraction),ls=':',c='k')
+            ax1.axvline(x=np.mean(sampler.acceptance_fraction)*0.5,ls='-',c='k')
+        else:
+            ax1.axvline(x=AF_cut,ls='-',c='k')
         ax1.set_xlabel('Acceptance Fraction')
         ax1.set_ylabel('# of chains')
         fig1.savefig(fit_struct['AF_histo'])
@@ -159,7 +166,7 @@ def corner_plot(sampler, model_struct, fit_struct, AF_cut=0, layout=None):
 
     print 'Done'
 
-
+    
 def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, layout=None):
     # TODO second axis
     # TODO redshift treatment
@@ -212,8 +219,10 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
             tmp_colors = cmap(i_mod / float(len(data_struct)))
 
             # plot best fit
-            y_bestfit = globals()[model_struct[i_mod]['func']]\
-                (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'])
+            if fit_struct['redshift'][i_mod] >= 0:
+                y_bestfit = globals()[model_struct[i_mod]['func']](xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+            else:
+                y_bestfit = globals()[model_struct[i_mod]['func']](xscale, model_struct[i_mod]['bestfit'])
             ax1.plot(xscale, y_bestfit, color=tmp_colors, ls='-')
             y_total += y_bestfit
 
@@ -239,21 +248,25 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
                  max([max(x['flux']) for x in data_struct]) * 10.)
     ax1.annotate(fit_struct['source'], xy=(0.9, 0.9), xycoords='axes fraction', horizontalalignment='right')
-    ax1.annotate("%s%4.2f" % ('z=', fit_struct['redshift']), xy=(0.9, 0.8),
-                 xycoords='axes fraction', horizontalalignment='right')
 
     # create the second axis as restframe frequency
-    ax1xb = ax1.twiny()
-    ax1xb.set_xscale("log")
+    # TODO make a propoer second axis in restframe
+    # if fit_struct['all_same_redshift'] is True and fit_struct['redshift'][0]>0.:
+    #     ax1.annotate("%s%4.2f" % ('z=', fit_struct['redshift'][0]), xy=(0.9, 0.8),
+    #                 xycoords='axes fraction', horizontalalignment='right')
+    #     ax1xb = ax1.twiny()
+    #     ax1xb.set_xscale("log")
+    #     ax1xbticks = ax1.get_xticks()
+    #     ax1xbticks_minor = ax1.get_xticks(minor=True)
 
-    ax1xbticks = ax1.get_xticks()
-    ax1xbticks_minor = ax1.get_xticks(minor=True)
-
-    ax1xb.set_xticks(ax1xbticks / (1. + fit_struct['redshift']))
-    ax1xb.set_xticks(ax1xbticks_minor / (1. + fit_struct['redshift']), minor=True)
-    ax1xb.set_xticklabels(ut.second_axis_nu_restframe(ax1xbticks, fit_struct['redshift']))
-    ax1xb.set_xlabel(r"Restframe Frequency [Hz]")
-    ax1xb.set_xlim([i for i in ax1.get_xlim()])
+    #     ax1xb.set_xticks(ax1xbticks / (1. + fit_struct['redshift'][0]))
+    #     ax1xb.set_xticks(ax1xbticks_minor / (1. + fit_struct['redshift'][0]), minor=True)
+    #     #ax1xb.set_xticklabels(ut.second_axis_nu_restframe(ax1xbticks, fit_struct['redshift'][0]))
+    #     ax1xb.set_xlabel(r"Restframe Frequency [Hz]")
+    #     ax1xb.set_xlim([i for i in ax1.get_xlim()])
+    # else:
+    #     print "No restframe axis plotted because components are at different redshift!"
+    #     pass
 
     fig1.tight_layout()
     fig1.savefig(fit_struct['SED_fnu_plot'])
@@ -291,6 +304,10 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
     cmap = mpl.cm.rainbow
     nb_rows = int(np.ceil(len(data_struct)**0.5))
     nb_cols = int(np.round(len(data_struct)/len(data_struct)**0.5))
+    #print "####"
+    #print "Characteristics of the plot window"
+    #print nb_rows, nb_cols, len(data_struct)
+    #print "####"
     fig, axs = plt.subplots(nb_cols, nb_rows, sharex=True, sharey=True)
     fig.subplots_adjust(0.16, 0.11, 0.95, 0.93, 0, 0)
 
@@ -301,9 +318,12 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
 
     # loop on the arrangement: data and combination of models are the same color
     for i_arr in range(len(data_struct)):  # loop on the arrangement
-        # calculate the index of the subplot, trick to have origin ofrom bottom left
-        i_x = (nb_cols-1)-int(i_arr/nb_cols)
-        i_y = int(i_arr%nb_cols)
+        # calculate the index of the subplot, trick to have origin from bottom left
+        i_y = (nb_cols-1)-int(i_arr/nb_cols)
+        #i_y = int(i_arr/nb_cols)
+        i_x = int(i_arr % nb_cols)
+        #print int(i_arr/nb_cols)
+        #print i_x, i_y, i_arr
         
         # get the detection and upper limits from data and plot them
         mask_d = data_struct[i_arr]['det_type'] == 'd'
@@ -318,9 +338,13 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
             tmp_color = cmap(i_mod / float(len(data_struct)))
 
             # plot best fit
-            y_bestfit = globals()[model_struct[i_mod]['func']]\
-                (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'])
-            axs[i_x,i_y].plot(xscale, y_bestfit, color=tmp_color, ls='-')
+            if fit_struct['redshift'][i_mod] >= 0:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+            else:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'])
+            axs[i_x, i_y].plot(xscale, y_bestfit, color=tmp_color, ls='-')
             y_total += y_bestfit
 
         # plot the total of components
@@ -334,7 +358,6 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
         axs[i_x, i_y].plot(filter_struct[i_arr]['center'][mask_ul],
                                    data_struct[i_arr]['flux'][mask_ul],
                                    ls='None', color='k', marker='v')
-        #axs[i_x,i_y].set_
 
         # setting plot axes, labels, etc
         axs[i_x, i_y].set_xscale("log")
@@ -347,22 +370,24 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
                     xycoords='axes fraction', horizontalalignment='right', fontsize=8)
 
     # remove the empty subplots
-    if len(data_struct)<nb_cols*nb_rows:
-        for i_arr in range(len(data_struct),nb_cols*nb_rows):
-            i_x = (nb_cols-1)-int(i_arr/nb_cols)
-            i_y = int(i_arr%nb_cols)
-            fig.delaxes(axs[i_x,i_y])
+    if len(data_struct) < nb_cols*nb_rows:
+        for i_arr in range(len(data_struct), nb_cols*nb_rows):
+            i_y = (nb_cols-1)-int(i_arr/nb_cols)
+            i_x = int(i_arr % nb_cols)
+            fig.delaxes(axs[i_x, i_y])
         
     # general title for axis
     fig.text(0.5, 0.02, "Frequency [Hz]", ha='center')
     fig.text(0.01, 0.5, r"F$_\nu}$ [erg/s/cm$^2$/Hz]", va='center', rotation='vertical')
-    fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift']), ha='center')
-
+    if fit_struct['all_same_redshift'] is True:
+        fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift'][0]), ha='center')
+    else:
+        fig.text(0.5, 0.95, "{}".format(fit_struct['source']), ha='center')
     fig.savefig(fit_struct['SED_fnu_splitplot'])
 
     print 'Done'
 
-
+    
 def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, fit_struct, layout=None, AF_cut=True):
     """
     Plot the results of the fitting in nu - fnu as a spaghetti plot
@@ -433,19 +458,32 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
             #dim_prob_full = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * fit_struct['nwalkers']
             dim_prob = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * len(ind_walkers)
             segs = np.zeros((dim_prob, dim_plot, 2))
-            for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
-                for cpt_w,i_walkers in enumerate(ind_walkers):
-                    #print i_steps,i_walkers
-                    y_spa = globals()[model_struct[i_mod]['func']]\
-                        (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'])
-                    segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+            if fit_struct['redshift'][i_mod] >= 0:
+                for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                    for cpt_w,i_walkers in enumerate(ind_walkers):
+                        #print i_steps,i_walkers
+                        y_spa = globals()[model_struct[i_mod]['func']]\
+                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+            else:
+                for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                    for cpt_w,i_walkers in enumerate(ind_walkers):
+                        #print i_steps,i_walkers
+                        y_spa = globals()[model_struct[i_mod]['func']]\
+                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+
             segs[:, :, 0] = xscale
             lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
             ax1.add_collection(lines)
 
             # overplot best fit
-            y_bestfit = globals()[model_struct[i_mod]['func']]\
-                (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'])
+            if fit_struct['redshift'][i_mod] >= 0:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+            else:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'])
             ax1.plot(xscale, y_bestfit, color='k', ls='-')
 
         ax1.errorbar(filter_struct[i_arr]['center'][mask_d],
@@ -467,21 +505,26 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
                  max([max(x['flux']) for x in data_struct]) * 10.)
     ax1.annotate(fit_struct['source'], xy=(0.9, 0.9), xycoords='axes fraction', horizontalalignment='right')
-    ax1.annotate("%s%4.2f" % ('z=', fit_struct['redshift']), xy=(0.9, 0.8),
-                 xycoords='axes fraction', horizontalalignment='right')
 
     # create the second axis as restframe frequency
-    ax1xb = ax1.twiny()
-    ax1xb.set_xscale("log")
+    # TODO make a proper second axis
+    # if fit_struct['all_same_redshift'] is True and fit_struct['redshift'][0]>0.:
+    #     ax1.annotate("%s%4.2f" % ('z=', fit_struct['redshift'][0]), xy=(0.9, 0.8),
+    #                 xycoords='axes fraction', horizontalalignment='right')
+    #     ax1xb = ax1.twiny()
+    #     ax1xb.set_xscale("log")
+    #     ax1xbticks = ax1.get_xticks()
+    #     ax1xbticks_minor = ax1.get_xticks(minor=True)
 
-    ax1xbticks = ax1.get_xticks()
-    ax1xbticks_minor = ax1.get_xticks(minor=True)
-
-    ax1xb.set_xticks(ax1xbticks / (1. + fit_struct['redshift']))
-    ax1xb.set_xticks(ax1xbticks_minor / (1. + fit_struct['redshift']), minor=True)
-    ax1xb.set_xticklabels(ut.second_axis_nu_restframe(ax1xbticks, fit_struct['redshift']))
-    ax1xb.set_xlabel(r"Restframe Frequency [Hz]")
-    ax1xb.set_xlim([i for i in ax1.get_xlim()])
+    #     ax1xb.set_xticks(ax1xbticks / (1. + fit_struct['redshift'][0]))
+    #     ax1xb.set_xticks(ax1xbticks_minor / (1. + fit_struct['redshift'][0]), minor=True)
+    #     #ax1xb.set_xticklabels(ut.second_axis_nu_restframe(ax1xbticks, fit_struct['redshift'][0]))
+    #     ax1xb.set_xticklabels(ax1xbticks)
+    #     ax1xb.set_xlabel(r"Restframe Frequency [Hz]")
+    #     ax1xb.set_xlim([i for i in ax1.get_xlim()])
+    # else:
+    #     print "No restframe axis plotted because components are at different redshift!"
+    #     pass
 
     fig1.tight_layout()
     fig1.savefig(fit_struct['SED_fnu_spaplot'])
@@ -530,8 +573,8 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
     # loop on the arrangement: data and combination of models are the same color
     for i_arr in range(len(data_struct)):  # loop on the arrangement
         # calculate the index of the subplot, trick to have origin ofrom bottom left
-        i_x = (nb_cols-1)-int(i_arr/nb_cols)
-        i_y = int(i_arr%nb_cols)
+        i_y = (nb_cols-1)-int(i_arr/nb_cols)
+        i_x = int(i_arr%nb_cols)
 
         # get the detection and upper limits from data and plot them
         mask_d = data_struct[i_arr]['det_type'] == 'd'
@@ -555,18 +598,30 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
             # create the line list (segs) and feed in linecollection (improvement of perf for large numbers)
             dim_prob = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * len(ind_walkers)
             segs = np.zeros((dim_prob, dim_plot, 2))
-            for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
-                for cpt_w,i_walkers in enumerate(ind_walkers):
-                    y_spa = globals()[model_struct[i_mod]['func']]\
-                        (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'])
-                    segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+
+            if fit_struct['redshift'][i_mod] >= 0:
+                for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                    for cpt_w, i_walkers in enumerate(ind_walkers):
+                        y_spa = globals()[model_struct[i_mod]['func']]\
+                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+            else:
+                for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                    for cpt_w, i_walkers in enumerate(ind_walkers):
+                        y_spa = globals()[model_struct[i_mod]['func']]\
+                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
             segs[:, :, 0] = xscale
             lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
             axs[i_x, i_y].add_collection(lines)
 
             # overplot best fit
-            y_bestfit = globals()[model_struct[i_mod]['func']]\
-                (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'])
+            if fit_struct['redshift'][i_mod] >= 0:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+            else:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'])
             axs[i_x, i_y].plot(xscale, y_bestfit, color='k', ls='-')
 
         # overplot the data
@@ -592,15 +647,17 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
     # remove the empty subplots
     if len(data_struct)<nb_cols*nb_rows:
         for i_arr in range(len(data_struct),nb_cols*nb_rows):
-            i_x = (nb_cols-1)-int(i_arr/nb_cols)
-            i_y = int(i_arr%nb_cols)
+            i_y = (nb_cols-1)-int(i_arr/nb_cols)
+            i_x = int(i_arr%nb_cols)
             fig.delaxes(axs[i_x,i_y])
 
     # general title for axis
     fig.text(0.5, 0.02, "Frequency [Hz]", ha='center')
     fig.text(0.01, 0.5, r"F$_\nu}$ [erg/s/cm$^2$/Hz]", va='center', rotation='vertical')
-    fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift']), ha='center')
-
+    if fit_struct['all_same_redshift'] is True:
+        fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift'][0]), ha='center')
+    else:
+        fig.text(0.5, 0.95, "{}".format(fit_struct['source']), ha='center')
     fig.savefig(fit_struct['SED_fnu_splitspaplot'])
     print 'Done'
 

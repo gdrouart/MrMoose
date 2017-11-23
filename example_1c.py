@@ -1,3 +1,9 @@
+"""
+Simplest example to generate a .fit, .mod and .dat file to feed in MrMoose for 
+demonstration. The model consists of a double power-law with a break frequency
+and six data points from a source at z=0
+"""
+
 import models as md
 import numpy as np
 import mm_utilities as mm
@@ -52,10 +58,11 @@ with open('data/fake_source_ex1c.dat', 'wb') as fake:
 with open('fake_source_ex1c.fit', 'wb') as fake:
     fake.write('source_file: data/fake_source_ex1c.dat \n')
     fake.write('model_file: models/fake_source_ex1c.mod \n')
-    fake.write('redshift: '+str(redshift)+'\n')
-    fake.write('nwalkers: 200 \n')
-    fake.write('nsteps: 600 \n')
-    fake.write('nsteps_cut: 580 \n')
+    fake.write('all_same_redshift: True \n')
+    fake.write('redshift: ['+str(redshift)+'] \n')
+    fake.write('nwalkers: 20 \n')
+    fake.write('nsteps: 60 \n')
+    fake.write('nsteps_cut: 58 \n')
     fake.write('percentiles: [10., 25., 50., 75., 90.] \n')
     fake.write('skip_imaging: False \n')
     fake.write('skip_fit: False \n')
@@ -73,5 +80,3 @@ with open('models/fake_source_ex1c.mod', 'wb') as fake:
     fake.write('$\\alpha_1$   0.0  2.5 \n')
     fake.write('$\\alpha_2$  -2.5  0.0 \n')
 
-#if __name__ == "__main__":
-#    fake_sync_source()

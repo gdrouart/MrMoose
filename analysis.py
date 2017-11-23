@@ -67,15 +67,18 @@ def find_stats_fit(sampler, models, fit_struct, data_struct):
         models[i]['bestfit'] = best_param[lb:ub]
         models[i]['perc'] = [perc_param[j][lb:ub] for j in range(len(perc_param))]
         lb += models[i]['dim']
-    fit_struct['best_lnL'] = sampler.lnprobability[bestML_index[0], bestML_index[1]]
+    # the float() is a trick to force saving the valu in a variable and not only create a pointer
+    fit_struct['best_lnL'] = float(sampler.lnprobability[bestML_index[0], bestML_index[1]])
 
     # TODO extract the seed number for the RNG in emcee for possible future reproduction (needs emcee and init position)
 
     # Calculate the AICc and save
     # in developpement
-    # TODO make a better count of data point for AICc (multi components - multi resolution)
-    ndata = len(data_struct[0]['filter'])  # temporary hack
-    ndata2 = sum([len(i['filter']) for i in data_struct])  # to check with multi layer
-    penalty_factor = 2 * ndim * (ndim + 1) / (ndata - ndim - 1)
-    fit_struct['AICc'] = 2 * ndim - 2 * fit_struct['best_lnL'] + penalty_factor
-
+    # consider each flux of each arrangement as one datapoint
+    ndata = sum([len(elem['filter']) for i,elem in enumerate(data_struct)])
+    try:
+        print "AICc calculation... still in developpement, to be used with caution"
+        penalty_factor = 2 * ndim * (ndim +1) / (ndata - ndim -1)
+        fit_struct['AICc'] = 2* ndim -2 * fit_struct['best_lnL'] + penalty_factor
+    except:
+        print "AICc cannot be calculated, too many parameters compared to data"

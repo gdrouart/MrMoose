@@ -53,16 +53,18 @@ def calc_chi2_mod(upper_lim, rms, model):
     return -2.*np.sum(np.log((np.pi/2.)**0.5*rms*(1.+scipy.special.erf(((rms-model)/((2**0.5)*rms))))))
 
 
-def lnlike(theta, data, filters, param, detection_mask, redshift):
+
+def lnlike(theta, fit_struct, data, filters, param, detection_mask):
     """
     Calculated the chi2 likelihood, by calculates the model data from the initial/current guess and summing
     chi2 of each different arrangement to get the total chi2.
 
     :param theta: This is are the free parameters that will be fitted in the emcee process, the MCMC.
+    :param fit_struct: the structure containing the information about fit parameters
     :param data: This is the observed data that is compared with the model
+    :param filters: same structure than data, but to reference the filters to be used
     :param param: This contains the name of the function to be called on the different combinations of models
     :param detection_mask: List of true/false to indicate with observation is a detection or upper limit
-    :param redshift: The redshift of the object
     :return: Returns the total chi2 of the current guess.
     """
     # feeding the theta into the current parameter values
@@ -94,27 +96,32 @@ def lnlike(theta, data, filters, param, detection_mask, redshift):
         min_tmp = np.log10(min(data[i]['lambda0'])*0.01)
         max_tmp = np.log10(max(data[i]['lambda0'])*100.)
         xscale = 10**np.linspace(min_tmp, max_tmp, 2000)
+        
+        # TODO: this is not the index i for redshift but number_of_component[i][j] to pass
+        # need to figure out a way of minimising conditions and loop
+        # for j
+        #    if z >0
+        #        global+z
+        #    else
+        #        global
+        temp = np.zeros(2000)
 
-        temp = [globals()[param[number_of_component[i][j]]['func']]
-                (xscale, param[number_of_component[i][j]]['current'], redshift)
-                for j in range(len(number_of_component[i]))]
-
-        temp = np.sum(temp, axis=0)
+        for j in range(len(number_of_component[i])):
+            if fit_struct['redshift'][number_of_component[i][j]] >= 0:
+                #print "pass positive, ", param[number_of_component[i][j]]['func']
+                temp2 = globals()[param[number_of_component[i][j]]['func']]\
+                    (xscale, param[number_of_component[i][j]]['current'], fit_struct['redshift'][number_of_component[i][j]])
+            else:
+                #print "pass negative, ", param[number_of_component[i][j]]['func']
+                temp2 = globals()[param[number_of_component[i][j]]['func']]\
+                    (xscale, param[number_of_component[i][j]]['current'])
+            temp += temp2
 
         # Making the sum of models to go through filters
         temp_mod_filter = np.empty(data[i]['lambda0'].size)
-        #for j, elem in enumerate(data[i]['lambda0']):
-        #    #raw_input("press enter to continue")
-        #    #print filters[i][j]['name']
-        #    temp_mod_filter[j] = ut.integrate_filter2(xscale, temp, filters[i][j]['wav'], filters[i][j]['trans'])
-        #    #temp_mod_filter[j] = ut.integrate_filter(temp, filters[i][j]['wav'], filters[i][j]['trans'])
-
-        # normally the good one, filter structure as the data one
 
         for j, elem in enumerate(filters[i]['name']):
-            #raw_input("press enter to continue")
             temp_mod_filter[j] = ut.integrate_filter(xscale, temp, filters[i]['wav'][j][:], filters[i]['trans'][j][:])
-            #temp_mod_filter[j] = ut.integrate_filter(temp, filters[i][j]['wav'], filters[i][j]['trans'])
 
         model_data.append(temp_mod_filter)
 
@@ -125,6 +132,7 @@ def lnlike(theta, data, filters, param, detection_mask, redshift):
 
         upper_limits.append(data[i][~detection_mask[i]])
         model_upper_limits.append(model_data[i][~np.array(detection_mask[i])])
+
 
     # calculate the total chi2 which is the main part of this function
     chi2_classic = []
@@ -162,8 +170,7 @@ def lnprior(theta, models):
     list_prior = [0.0 if tmin[i] < theta[i] < tmax[i] else -np.inf for i in range(len(tmin))]
     return sum(list_prior)
 
-
-def lnprob(theta, data, filters, models, detection_mask, redshift):
+def lnprob(theta, fit_struct, data, filters, models, detection_mask):
     # TODO implement redshift as free parameter
     # TODO implement non-uniform prior (see lnprior function)
     """
@@ -181,8 +188,7 @@ def lnprob(theta, data, filters, models, detection_mask, redshift):
     lp = lnprior(theta, models)
     if not np.isfinite(lp):
         return -np.inf
-    #return lp + lnlike(theta, data, models, detection_mask, redshift)
-    return lp + lnlike(theta, data, filters, models, detection_mask, redshift)
+    return lp + lnlike(theta, fit_struct, data, filters, models, detection_mask)
 
 
 def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0):
@@ -208,8 +214,7 @@ def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0)
     # single processor
     if Parallel == 0:
         sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
-                                        args=(data_struct, filter_struct, model_struct, detection_mask, fit_struct['redshift']))
-
+                                        args=(fit_struct, data_struct, filter_struct, model_struct, detection_mask))
     else:
         # multi-processing (pool created via pathos, allow to pickle the sampler)
         tmp_pool = mp.ProcessingPool(Parallel)

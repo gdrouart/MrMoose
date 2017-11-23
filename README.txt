@@ -1,6 +1,6 @@
 ###############################################
 # ########################################### #
-# # MrMoose README - Current Version v1.0.0 # #
+# # MrMoose README - Current Version v1.1.0 # #
 # ########################################### #
 ###############################################
 
@@ -32,25 +32,36 @@ emcee sampler object (.pkl) allowing users to tranfer the output to personnal gr
 # References: #
 ###############
 If using this code, please refer to the published paper of the code:
-arxiv pdf: 
-bibtex: 
-
+(submitted to MNRAS, under reviewing process)
+arxiv pdf: tbc
+bibtex: tbc 
 
 #####################################
 # Last updates, main modifications: #
 #####################################
 * v1.0.0: public release
-
+* v1.0.1: correctif release
+            - correction of the dump fit_struct in the .sav file to be human readable
+            - addition of the model_struct containing parameters best fit values and uncertainties in .sav file
+            - update of model library, correction of overflow problems in synchrotron laws
+            - correction of graphic bug in displaying the walker chains plot (inverted color depending on AF_cut value)
+* v1.1.0: update release
+            - implementation of redshift as free parameters
+            - correction of various bugs
+            - homogeneisation of examples to free parameter redshift implementation
 
 #############################
 # Installation instruction: #
 #############################
-Download the MrMoose package and run the following in the directory:
+Download MrMoose from github, either by running in a terminal (require git to be installed)
+git clone https://github.com/gdrouart/MrMoose.git
+(or as a standard .zip file from the same url in a browser)
+
+Run the following in the directory, to install all required dependencies
 python install setup.py
 
-This should install all required dependencies. After this, MrMoose can be imported as
-a package and used in this directory, using classical python commands
-
+Add the path to MrMoose in your PYTHONPATH variable in your .bashrc or .profile to be called on demand
+export PYTHONPATH=Your_path_to_MrMoose_directory:$PYTHONPATH
 
 #############
 # First run #
@@ -72,7 +83,7 @@ To run your first fit, after launching ipython:
 will perform your first run and generate your first results! (several .pdf files and a .pkl file
 in the outputs folder)
 
-Make sure you also create a data, models and outputs folders, otherwise it will complain!
+Make sure you also create a data, models and outputs folders if not already existing, otherwise MrMoose will crash!
 >mkdir data
 >mkdir models
 >mkdir outputs
@@ -84,15 +95,17 @@ Make sure you also create a data, models and outputs folders, otherwise it will 
 - Require to underestimate the parameters(especially normalisation factor) in case of the presence of upper limits
 - Parallelisation on one source only is not effective, but working efficiently for sample (one source per core)
 
-
 ########################
 # Future developments: #
 ########################
 - Implementation of checkpoints to re-start chain convergence in case of crash/stops
-- Allowing different prior on the parameter (only uninformative, uniform prior in v1.0.0)
+- Allowing different prior on the parameter (only uninformative, uniform prior in v1.0)
+- Implement Jupyter interface
+- Transform MrMoose in a package
+- Implement use of the logging system
 - Implement template libraries of non-linear models to be fit along
 - Migration to Python 3
-- Allowing different redshift for different components, and allowing redshift as a free parameter
+- Allowing different redshift for different components, and allowing redshift as a free parameter - added in Version 1.1
 - Move the advanced feature to the setting file (.fit) as optional parameters
 
 #####################
@@ -106,6 +119,8 @@ of AF values, change the "histo" value to True (located just below the AF_cut).
 - layout: in the mrmoose.py the layout option allow for different style: presentation and talk. Customisation
 is possible by adding your own keyword and options - following the rcParams dictionary of matplotlib format -
 in the mm_utilities.py file in the function named "format_plot_output".
+- AICc(in development): a number to compare different model combination directly. See Akaike Information Criteria
+definition for a description of this diagnostic tool for model comparison. 
 
 ####################
 # Tips and tricks: #
