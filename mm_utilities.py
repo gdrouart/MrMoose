@@ -19,6 +19,7 @@ GNU General Public License for more details.
 
 import numpy as np
 import itertools
+from models import *
 
 def flatten_model_keyword(models, keyword):
     """Flatten the model file for the provided keyword in 1D array """
@@ -147,7 +148,7 @@ def add_filenames(fit_struct):
     fit_struct['SED_fnu_margplot'] = directory + suffix + '_SED_fnu_marg.pdf'
     fit_struct['SED_fnu_splitmargplot'] = directory + suffix + '_SED_fnu_marg_split.pdf'  # TODO
     #fit_struct['SED_nufnu_plot'] = directory + suffix + '_SED_nufnu.pdf'
-    #fit_struct['SED_file'] = directory + suffix + '.sed'  # TODO
+    fit_struct['SED_file'] = directory + suffix + '.sed'  # TODO
     fit_struct['sampler_file'] = directory + suffix + '.pkl'
     fit_struct['save_struct'] = directory + suffix + '.sav'
     return fit_struct
@@ -311,8 +312,29 @@ def imaging(fit_struct):
     return 0
 
 
-def create_SED(fit_struct, model_struct):
+def save_bestfit_SED(data_struct, fit_struct, model_struct):
     #TODO create a file with the SED as frequency vs flux, one column for each model
     #TODO create a header to explain each column
+
+    print "SED saving in developement, use with caution"
+
+    tab = []
+    min_data = min([min(x['lambda0']) for x in data_struct])*0.1
+    max_data = max([max(x['lambda0']) for x in data_struct])*10
+    xscale = 10 ** (np.linspace(np.log10(min_data), np.log10(max_data), 200))
+    tab.append(xscale)
+    for i_arr in range(len(data_struct)):
+        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        for i_mod in tmp_index_models:
+    # overplot best fit
+            if fit_struct['redshift'][i_mod] >= 0:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+            else:
+                y_bestfit = globals()[model_struct[i_mod]['func']]\
+                    (xscale, model_struct[i_mod]['bestfit'])
+            tab.append(y_bestfit)
+    # open and save the SED in file .sed
+    np.savetxt(fit_struct['SED_file'],np.transpose(tab), delimiter=',', header="Freq[Hz], "+model_struct[0]['func']+"[erg/s/cm/Hz]")
     return
 

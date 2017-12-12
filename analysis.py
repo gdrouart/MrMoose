@@ -19,6 +19,8 @@ GNU General Public License for more details.
 
 import mm_utilities as ut
 import numpy as np
+from astropy.cosmology import WMAP9 as cosmos
+from astropy import constants
 
 ##############################################
 # some function to use

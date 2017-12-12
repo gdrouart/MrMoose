@@ -194,7 +194,9 @@ def SED_fit(settings_file, Parallel=None):
         # format the model_struct as human readable and save
         model_sav = ut.format_sav_output(model_struct)
         yaml.dump([fit_struct,model_sav], output)
-
+        # save the best fit SED simultaneously
+        ut.save_bestfit_SED(data_struct, fit_struct, model_struct)
+    
     return sampler, model_struct, data_struct, filter_struct, fit_struct
 
 #def filtercalls(call_stack, modul, clas, func, full):
