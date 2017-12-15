@@ -242,7 +242,7 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax1.set_xlabel("Frequency [Hz]")
-    ax1.set_ylabel(r"F$_\nu}$ [erg/s/cm$^2$/Hz]")
+    ax1.set_ylabel(r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]")
     ax1.set_xlim(min([min(x['lambda0']) for x in data_struct]) * 0.1,
                  max([max(x['lambda0']) for x in data_struct]) * 10.)
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
@@ -378,7 +378,7 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
         
     # general title for axis
     fig.text(0.5, 0.02, "Frequency [Hz]", ha='center')
-    fig.text(0.01, 0.5, r"F$_\nu}$ [erg/s/cm$^2$/Hz]", va='center', rotation='vertical')
+    fig.text(0.01, 0.5, r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]", va='center', rotation='vertical')
     if fit_struct['all_same_redshift'] is True:
         fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift'][0]), ha='center')
     else:
@@ -499,7 +499,7 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax1.set_xlabel("Frequency [Hz]")
-    ax1.set_ylabel(r"F$_\nu}$ [erg/s/cm$^2$/Hz]")
+    ax1.set_ylabel(r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]")
     ax1.set_xlim(min([min(x['lambda0']) for x in data_struct]) * 0.1,
                  max([max(x['lambda0']) for x in data_struct]) * 10.)
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
@@ -653,7 +653,7 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
 
     # general title for axis
     fig.text(0.5, 0.02, "Frequency [Hz]", ha='center')
-    fig.text(0.01, 0.5, r"F$_\nu}$ [erg/s/cm$^2$/Hz]", va='center', rotation='vertical')
+    fig.text(0.01, 0.5, r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]", va='center', rotation='vertical')
     if fit_struct['all_same_redshift'] is True:
         fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift'][0]), ha='center')
     else:
@@ -749,7 +749,7 @@ def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_str
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax1.set_xlabel("Frequency [Hz]")
-    ax1.set_ylabel(r"F$_\nu}$ [erg/s/cm$^2$/Hz]")
+    ax1.set_ylabel(r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]")
     ax1.set_xlim(min([min(x['lambda0']) for x in data_struct]) * 0.1,
                  max([max(x['lambda0']) for x in data_struct]) * 10.)
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
@@ -774,3 +774,4 @@ def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_str
     fig1.tight_layout()
     fig1.savefig(fit_struct['SED_fnu_margplot'])
     print 'Done'
+
