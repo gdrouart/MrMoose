@@ -150,7 +150,7 @@ def SED_fit(settings_file, Parallel=None):
 
     ### plot the results ###
     layout = 'publication'
-    AF_cut = -1.   # set a value between 0 and 1, negative means a cut at mean/2
+    AF_cut = 0.23   # set a value between 0 and 1, negative means a cut at mean/2
     histo=True
 
     # MC Chains plot to check convergence

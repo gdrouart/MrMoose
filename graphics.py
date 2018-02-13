@@ -107,7 +107,7 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
     if histo == True:
         fig1 = plt.figure()
         ax1 = fig1.add_subplot(111)
-        n, bins, patches = ax1.hist(sampler.acceptance_fraction, 20, normed=1, facecolor='black', alpha=0.75)
+        n, bins, patches = ax1.hist(sampler.acceptance_fraction, 20, facecolor='black', alpha=0.75)
         if AF_cut <= 0:
             ax1.axvline(x=np.mean(sampler.acceptance_fraction),ls=':',c='k')
             ax1.axvline(x=np.mean(sampler.acceptance_fraction)*0.5,ls='-',c='k')
@@ -242,7 +242,7 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax1.set_xlabel("Frequency [Hz]")
-    ax1.set_ylabel(r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]")
+    ax1.set_ylabel(r"F$_\nu}$ [erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]")
     ax1.set_xlim(min([min(x['lambda0']) for x in data_struct]) * 0.1,
                  max([max(x['lambda0']) for x in data_struct]) * 10.)
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
@@ -319,11 +319,11 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
     # loop on the arrangement: data and combination of models are the same color
     for i_arr in range(len(data_struct)):  # loop on the arrangement
         # calculate the index of the subplot, trick to have origin from bottom left
-        i_y = (nb_cols-1)-int(i_arr/nb_cols)
+        i_x = (nb_cols-1)-int(i_arr/nb_cols)
         #i_y = int(i_arr/nb_cols)
-        i_x = int(i_arr % nb_cols)
+        i_y = int(i_arr % nb_cols)
         #print int(i_arr/nb_cols)
-        #print i_x, i_y, i_arr
+        print i_x, i_y, i_arr, data_struct[i_arr]['component'][0]
         
         # get the detection and upper limits from data and plot them
         mask_d = data_struct[i_arr]['det_type'] == 'd'
@@ -372,13 +372,13 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
     # remove the empty subplots
     if len(data_struct) < nb_cols*nb_rows:
         for i_arr in range(len(data_struct), nb_cols*nb_rows):
-            i_y = (nb_cols-1)-int(i_arr/nb_cols)
-            i_x = int(i_arr % nb_cols)
+            i_x = (nb_cols-1)-int(i_arr/nb_cols)
+            i_y = int(i_arr % nb_cols)
             fig.delaxes(axs[i_x, i_y])
         
     # general title for axis
     fig.text(0.5, 0.02, "Frequency [Hz]", ha='center')
-    fig.text(0.01, 0.5, r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]", va='center', rotation='vertical')
+    fig.text(0.01, 0.5, r"F$_\nu}$ [erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]", va='center', rotation='vertical')
     if fit_struct['all_same_redshift'] is True:
         fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift'][0]), ha='center')
     else:
@@ -499,7 +499,7 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax1.set_xlabel("Frequency [Hz]")
-    ax1.set_ylabel(r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]")
+    ax1.set_ylabel(r"F$_\nu}$ [erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]")
     ax1.set_xlim(min([min(x['lambda0']) for x in data_struct]) * 0.1,
                  max([max(x['lambda0']) for x in data_struct]) * 10.)
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,
@@ -573,8 +573,8 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
     # loop on the arrangement: data and combination of models are the same color
     for i_arr in range(len(data_struct)):  # loop on the arrangement
         # calculate the index of the subplot, trick to have origin ofrom bottom left
-        i_y = (nb_cols-1)-int(i_arr/nb_cols)
-        i_x = int(i_arr%nb_cols)
+        i_x = (nb_cols-1)-int(i_arr/nb_cols)
+        i_y = int(i_arr%nb_cols)
 
         # get the detection and upper limits from data and plot them
         mask_d = data_struct[i_arr]['det_type'] == 'd'
@@ -647,13 +647,13 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
     # remove the empty subplots
     if len(data_struct)<nb_cols*nb_rows:
         for i_arr in range(len(data_struct),nb_cols*nb_rows):
-            i_y = (nb_cols-1)-int(i_arr/nb_cols)
-            i_x = int(i_arr%nb_cols)
+            i_x = (nb_cols-1)-int(i_arr/nb_cols)
+            i_y = int(i_arr%nb_cols)
             fig.delaxes(axs[i_x,i_y])
 
     # general title for axis
     fig.text(0.5, 0.02, "Frequency [Hz]", ha='center')
-    fig.text(0.01, 0.5, r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]", va='center', rotation='vertical')
+    fig.text(0.01, 0.5, r"F$_\nu}$ [erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]", va='center', rotation='vertical')
     if fit_struct['all_same_redshift'] is True:
         fig.text(0.5, 0.95, "{}, z={}".format(fit_struct['source'],fit_struct['redshift'][0]), ha='center')
     else:
@@ -749,7 +749,7 @@ def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_str
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax1.set_xlabel("Frequency [Hz]")
-    ax1.set_ylabel(r"F$_\nu}$ [erg.s$^{-1}$/cm$^{-2}$.Hz$^{-1}$]")
+    ax1.set_ylabel(r"F$_\nu}$ [erg s$^{-1}$ cm$^{-2}$ Hz$^{-1}$]")
     ax1.set_xlim(min([min(x['lambda0']) for x in data_struct]) * 0.1,
                  max([max(x['lambda0']) for x in data_struct]) * 10.)
     ax1.set_ylim(min([min(x['flux']) for x in data_struct]) * 0.1,

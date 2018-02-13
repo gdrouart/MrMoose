@@ -130,5 +130,5 @@ We provide here some extra tips to manipulate ouputs:
 To compress the pdf into more handy version:
  - pdf to compressed pdf
 gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile=output.pdf input.pdf
- - pdf to png (or jpeg)
+ - pdf to png (or jpeg), just play around with the density and resizing to obtain a good quality image much lighter! 
 convert -density 200 -resize 200% input.pdf -quality 100 output.png
