@@ -31,10 +31,9 @@ emcee sampler object (.pkl) allowing users to tranfer the output to personnal gr
 ###############
 # References: #
 ###############
-If using this code, please refer to the published paper of the code:
-(submitted to MNRAS, under reviewing process)
-arxiv pdf: tbc
-bibtex: tbc 
+If using this code, please refer to the published paper or the ascl link of the code:
+https://ui.adsabs.harvard.edu/abs/2018MNRAS.477.4981D/abstract 
+https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
 
 #####################################
 # Last updates, main modifications: #
@@ -94,6 +93,7 @@ Make sure you also create a data, models and outputs folders if not already exis
 - Initial values set as the median of the interval of parameters
 - Require to underestimate the parameters(especially normalisation factor) in case of the presence of upper limits
 - Parallelisation on one source only is not effective, but working efficiently for sample (one source per core)
+- Only works in a python 2.7 environment and emcee 2.1, it is recommanded to create a virtual environment to avoid conflicts with the most recent package versions
 
 ########################
 # Future developments: #
