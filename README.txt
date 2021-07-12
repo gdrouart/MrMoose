@@ -48,6 +48,7 @@ https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
             - implementation of redshift as free parameters
             - correction of various bugs
             - homogeneisation of examples to free parameter redshift implementation
+* v1.2.0: update to Python 3
 
 #############################
 # Installation instruction: #
@@ -104,7 +105,7 @@ Make sure you also create a data, models and outputs folders if not already exis
 - Transform MrMoose in a package
 - Implement use of the logging system
 - Implement template libraries of non-linear models to be fit along
-- Migration to Python 3
+- Migration to Python 3 - Version 1.2
 - Allowing different redshift for different components, and allowing redshift as a free parameter - added in Version 1.1
 - Move the advanced feature to the setting file (.fit) as optional parameters
 

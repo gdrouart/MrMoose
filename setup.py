@@ -35,7 +35,7 @@ reqs=['pathos>=0.2.0',
      'PyYAML>=3.12']
 
 setup(name="MrMoose",
-      version="1.1.0b",
+      version="1.2.0b",
       author="Guillaume Drouart, Theresa Falkendal",
       author_emal="guillaume.drouart@curtin.edu.au, tfalkend@eso.org",
       description="MrMoose, multi-resolution, multi-source SED fitting code, with examples",
