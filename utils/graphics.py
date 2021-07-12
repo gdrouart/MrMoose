@@ -19,8 +19,8 @@ GNU General Public License for more details.
 
 #import sys
 #sys.path.append('/Library/Python/2.7/site-packages')
-import mm_utilities as ut
-from models import *
+from . import mm_utilities as ut
+from .models import *
 
 # TODO make a initial guess plotting
 # TODO reproduce for a nufnu plot
@@ -50,8 +50,8 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
     plt.rcParams.update({'xtick.labelsize':'small'})
     plt.rcParams.update({'ytick.labelsize':'small'})
 
-    print
-    print 'MC-Chains plot - convergence plot for each walker for each step'
+    print()
+    print('MC-Chains plot - convergence plot for each walker for each step')
 
     name_tab = ut.flatten_model_keyword(model_struct, 'param')
     min_tab = ut.flatten_model_keyword(model_struct, 'min')
@@ -69,7 +69,7 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
     if light:
         nwalkers_loop = np.random.randint(fit_struct['nwalkers'], size=light)
     else:
-        nwalkers_loop = range(fit_struct['nwalkers'])
+        nwalkers_loop = list(range(fit_struct['nwalkers']))
 
     # identify chains of stuck walkers depending on AF_cut
     if AF_cut >= 0:
@@ -78,17 +78,21 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
         AF_plot = np.mean(sampler.acceptance_fraction)*0.5
         ind_walkers = np.where(sampler.acceptance_fraction > AF_plot)[0]
 
+    samples=sampler.get_chain()
     fig = plt.figure()
     gs = gridspec.GridSpec(max_row, max_col)
+    # TODO: rewrite this with plt.subplots and grid axes (see split SED)
     i_param = 0
     for i_col in range(max_col):
         for i_row in range(max_row):
             if i_param < dim:
                 for i in nwalkers_loop:
                     ax = plt.subplot(gs[i_row, i_col])
-                    ax.plot(sampler.chain[i, :, i_param], c='grey', lw=0.3)  # plot all
+#                    ax.plot(sampler.chain[i, :, i_param], c='grey', lw=0.3)  # plot all
+                    ax.plot(samples[:, i, i_param], c='grey', lw=0.3)  # plot all
                 for i in ind_walkers:
-                    ax.plot(sampler.chain[i, :, i_param], c='k', lw=0.3)  # plot the "good" walkers
+#                    ax.plot(sampler.chain[i, :, i_param], c='k', lw=0.3)  # plot the "good" walkers
+                    ax.plot(samples[:, i, i_param], c='k', lw=0.3)  # plot the "good" walkers
                 plt.setp(ax.get_xticklabels(), visible=False)
                 range_param = abs(max_tab[i_param]-min_tab[i_param])
                 ax.set_ylim(min_tab[i_param]-0.05*range_param, max_tab[i_param]+0.05*range_param)
@@ -97,9 +101,11 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
         plt.setp(ax.get_xticklabels(), visible=True)  # set the last axis visible
         ax.set_xlabel('# steps')
     av_af = np.mean(sampler.acceptance_fraction)
+#    av_af = np.mean(sampler.accepted/samples.shape[0])
     perc_filt = float((fit_struct['nwalkers']-len(ind_walkers)))/fit_struct['nwalkers']*100.
     #print len(ind_walkers),fit_struct['nwalkers']
-    fig.text(0.5, 0.90,'{}, AAF={:.2f}, SW={:.1f}%'.format(fit_struct['source'],av_af,perc_filt), ha='center')
+    print(fit_struct['source'])
+    fig.text(0.5, 0.90,r'{}, AAF={:.2f}, SW={:.1f}%'.format(fit_struct['source'],av_af,perc_filt), ha='center')
     gs.tight_layout(fig, rect=[0, 0.0, 1., 0.90])
     gs.update(hspace=0.05)
     fig.savefig(fit_struct['MCChains_plot'])
@@ -116,7 +122,7 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
         ax1.set_xlabel('Acceptance Fraction')
         ax1.set_ylabel('# of chains')
         fig1.savefig(fit_struct['AF_histo'])
-    print 'Done'
+    print('Done')
 
 
 def corner_plot(sampler, model_struct, fit_struct, AF_cut=0, layout=None):
@@ -148,11 +154,13 @@ def corner_plot(sampler, model_struct, fit_struct, AF_cut=0, layout=None):
     else:
         index_accep = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
     
-    samples = sampler.chain[index_accep, fit_struct['nsteps_cut']:, :].reshape((-1, ndim))
+#    samples = sampler.chain[index_accep, fit_struct['nsteps_cut']:, :].reshape((-1, ndim))
+    samples = sampler.get_chain()[fit_struct['nsteps_cut']:, index_accep, :].reshape((-1,ndim))
     perc_tab = np.array(fit_struct['percentiles']) * 0.01  # transformation to feed corner function
 
-    print
-    print 'Corner plot - marginalized posterior pdf of each parameter'
+#    print(samples.shape,samples2.shape)
+    print()
+    print('Corner plot - marginalized posterior pdf of each parameter')
 
     # calling the corner package to plot
     fig = corner.corner(samples, labels=name_tab, show_titles=True, verbose=False,
@@ -164,7 +172,7 @@ def corner_plot(sampler, model_struct, fit_struct, AF_cut=0, layout=None):
     fig.text(0.9, 0.9, fit_struct['source'], ha='right')
     fig.savefig(fit_struct['triangle_plot'])
 
-    print 'Done'
+    print('Done')
 
     
 def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, layout=None):
@@ -184,8 +192,8 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
-    print
-    print 'SED plot - Best fit visualisation'
+    print()
+    print('SED plot - Best fit visualisation')
 
     # restore all defaults, and apply new style
     mpl.rcdefaults()
@@ -212,7 +220,7 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
         mask_ul = data_struct[i_arr]['det_type'] == 'u'
 
         # get the index of the models from first line of arrangements
-        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        tmp_index_models = list(map(int, str.split(data_struct[i_arr]['component_number'][0], ',')))
         y_total = np.zeros(dim_plot)
 
         for i_mod in tmp_index_models:  # loop on models in the arrangement
@@ -271,7 +279,7 @@ def SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, 
     fig1.tight_layout()
     fig1.savefig(fit_struct['SED_fnu_plot'])
 
-    print 'Done'
+    print('Done')
 
 
 def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_struct, layout=None):
@@ -289,8 +297,8 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
-    print
-    print 'split SED plot - Best fit visualisation'
+    print()
+    print('split SED plot - Best fit visualisation')
 
     # restore all defaults, and apply new style
     mpl.rcdefaults()
@@ -323,7 +331,7 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
         #i_y = int(i_arr/nb_cols)
         i_y = int(i_arr % nb_cols)
         #print int(i_arr/nb_cols)
-        print i_x, i_y, i_arr, data_struct[i_arr]['component'][0]
+#        print(i_x, i_y, i_arr, data_struct[i_arr]['component'][0])
         
         # get the detection and upper limits from data and plot them
         mask_d = data_struct[i_arr]['det_type'] == 'd'
@@ -332,7 +340,7 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
         y_total = np.zeros(dim_plot)
 
         # get the index of the models from first line of arrangements
-        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        tmp_index_models = list(map(int, str.split(data_struct[i_arr]['component_number'][0], ',')))
 
         for i_mod in tmp_index_models:  # loop on models in the arrangement
             tmp_color = cmap(i_mod / float(len(data_struct)))
@@ -385,7 +393,7 @@ def split_SED_fnu_emcee_bestfit(data_struct, filter_struct, model_struct, fit_st
         fig.text(0.5, 0.95, "{}".format(fit_struct['source']), ha='center')
     fig.savefig(fit_struct['SED_fnu_splitplot'])
 
-    print 'Done'
+    print('Done')
 
     
 def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, fit_struct, layout=None, AF_cut=True):
@@ -404,8 +412,8 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
     from matplotlib.collections import LineCollection
     import matplotlib.pyplot as plt
 
-    print
-    print 'SED plot - Spaghetti visualisation'
+    print()
+    print('SED plot - Spaghetti visualisation')
 
     # restore all defaults, and apply new style
     mpl.rcdefaults()
@@ -440,7 +448,7 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
                  ls='None', color=cmap(i_arr / float(len(data_struct))), marker='v')
 
         # get the index of the models from first line of arrangements
-        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        tmp_index_models = list(map(int, str.split(data_struct[i_arr]['component_number'][0], ',')))
 
         for i_mod in tmp_index_models:  # loop on models in the arrangement
             # defining the parameter index for the randomn selection
@@ -461,16 +469,20 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
             if fit_struct['redshift'][i_mod] >= 0:
                 for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
                     for cpt_w,i_walkers in enumerate(ind_walkers):
-                        #print i_steps,i_walkers
+#                        print(i_steps,i_walkers,sampler.chain.shape)
+#                        y_spa = globals()[model_struct[i_mod]['func']]\
+#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub], fit_struct['redshift'][i_mod])
                         segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
             else:
                 for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
                     for cpt_w,i_walkers in enumerate(ind_walkers):
                         #print i_steps,i_walkers
+#                        y_spa = globals()[model_struct[i_mod]['func']]\
+#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub])
                         segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
 
             segs[:, :, 0] = xscale
@@ -528,7 +540,7 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
 
     fig1.tight_layout()
     fig1.savefig(fit_struct['SED_fnu_spaplot'])
-    print 'Done'
+    print('Done')
 
 
 def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, fit_struct, layout=None, AF_cut=0):
@@ -547,8 +559,8 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
     from matplotlib.collections import LineCollection
     import matplotlib.pyplot as plt
 
-    print
-    print 'split SED plot - Spaghetti visualisation'
+    print()
+    print('split SED plot - Spaghetti visualisation')
 
     # restore all defaults, and apply new style
     mpl.rcdefaults()
@@ -581,7 +593,7 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
         mask_ul = data_struct[i_arr]['det_type'] == 'u'
 
         # get the index of the models from first line of arrangements
-        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        tmp_index_models = list(map(int, str.split(data_struct[i_arr]['component_number'][0], ',')))
 
         for i_mod in tmp_index_models:  # loop on models in the arrangement
             # defining the parameter index for the randomn selection
@@ -602,14 +614,18 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
             if fit_struct['redshift'][i_mod] >= 0:
                 for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
                     for cpt_w, i_walkers in enumerate(ind_walkers):
+#                        y_spa = globals()[model_struct[i_mod]['func']]\
+#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub], fit_struct['redshift'][i_mod])
                         segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
             else:
                 for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
                     for cpt_w, i_walkers in enumerate(ind_walkers):
+#                        y_spa = globals()[model_struct[i_mod]['func']]\
+#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub])
                         segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
             segs[:, :, 0] = xscale
             lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
@@ -659,7 +675,7 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
     else:
         fig.text(0.5, 0.95, "{}".format(fit_struct['source']), ha='center')
     fig.savefig(fit_struct['SED_fnu_splitspaplot'])
-    print 'Done'
+    print('Done')
 
 
 def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_struct, layout=None):
@@ -677,8 +693,8 @@ def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_str
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
-    print
-    print 'SED plot - Marginalised parameters visualisation'
+    print()
+    print('SED plot - Marginalised parameters visualisation')
 
     # restore all defaults, and apply new style
     mpl.rcdefaults()
@@ -705,7 +721,7 @@ def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_str
         mask_ul = data_struct[i_arr]['det_type'] == 'u'
 
         # get the index of the models from first line of arrangements
-        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        tmp_index_models = list(map(int, str.split(data_struct[i_arr]['component_number'][0], ',')))
 
         for i_mod in tmp_index_models:  # loop on models in the arrangement
             # defining the parameter index for the randomn selection
@@ -773,5 +789,5 @@ def SED_fnu_emcee_marginalised(data_struct, filter_struct, model_struct, fit_str
 
     fig1.tight_layout()
     fig1.savefig(fit_struct['SED_fnu_margplot'])
-    print 'Done'
+    print('Done')
 

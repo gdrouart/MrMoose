@@ -65,7 +65,7 @@ def read_data(file_name, units):
             table[:]['flux'] *= 1e-29
             table[:]['flux_error'] *= 1e-29
         elif flux_unit == 'ergs':
-            print 'nothing to convert, already in right units'
+            print('nothing to convert, already in right units')
         else:
             sys.exit('Input flux unit not valid, allowed units are: Jy, mJy, uJy and ergs.')
 
@@ -76,7 +76,7 @@ def read_data(file_name, units):
         elif wavelength_unit == 'um':
             table[:]['lambda0'] = np.float(constants.c.value*1e6) / table[:]['lambda0']
         elif wavelength_unit == 'Hz':
-            print 'nothing to convert, already in right units'
+            print('nothing to convert, already in right units')
         elif wavelength_unit == 'GHz':
             table[:]['lambda0'] *= 10**9
         elif wavelength_unit == 'MHz':
@@ -91,7 +91,7 @@ def read_data(file_name, units):
         sub_tables = []
 
         # Create a reference list containing the corresponding arrangement numbers
-        refvalues = range(1, number_arrangement+1)
+        refvalues = list(range(1, number_arrangement+1))
 
         for refvalue in refvalues:
             sub_tables.append(table[:][table['arrangement'] == refvalue])
@@ -125,7 +125,7 @@ def NEDtocode(filenamein, filenameout):
     np_comments = ['"note"', ]*tmp[0].size
 
     table_to_write = np.array(
-        zip(np_passband, np_freq, np_det_type, np_data, np_sigma, np_comp_arr, np_comments, np_comp_num),
+        list(zip(np_passband, np_freq, np_det_type, np_data, np_sigma, np_comp_arr, np_comments, np_comp_num)),
         dtype=[('f1', 'S20'), ('f2', float), ('f3', 'S2'), ('f4', float), ('f5', float), ('f6', int), ('f7', 'S20'),
                ('f8', 'S8')])
     np.savetxt(filenameout, table_to_write, delimiter="  ",
@@ -159,7 +159,7 @@ def read_single_filter(name):
             wav, trans = np.genfromtxt(name, unpack=True)
             return wav, trans
         except IOError:
-            print "{} filter file does not exist".format(name)
+            print(("{} filter file does not exist".format(name)))
 
 
 def read_mod_file(name_filemod):
@@ -183,6 +183,7 @@ def read_mod_file(name_filemod):
         # read the blocks of functions
         while line.strip():
             tmpfunc, dim = line.strip().split()
+            tmpfunc=tmpfunc.decode('UTF-8')
             func.append(tmpfunc)
             dim_func.append(dim)
             dim = int(dim)
@@ -193,6 +194,7 @@ def read_mod_file(name_filemod):
             maxparam = []
             while count < dim:
                 namepar, minpar, maxpar = line.strip().split()
+                namepar=namepar.decode('UTF-8')
                 param.append(namepar)
                 minparam.append(minpar)
                 maxparam.append(maxpar)
@@ -200,8 +202,8 @@ def read_mod_file(name_filemod):
                 line = f.readline()
             while line.strip() == '#':
                 line = f.readline()
-            minparam = np.array(map(float, minparam))
-            maxparam = np.array(map(float, maxparam))
+            minparam = np.array(list(map(float, minparam)))
+            maxparam = np.array(list(map(float, maxparam)))
             comp = {'func': tmpfunc, 'dim': dim, 'param': param, 'min': minparam, 'max': maxparam}
             list_comp.append(comp)
     return list_comp

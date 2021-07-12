@@ -131,6 +131,61 @@ def BB_law_z(x, param):
     return y_z
 
 
+def MBB_law(nu_obs, param, redshift):
+    """
+    Calculate the flux for a modified black body. 
+    Formula taken from Gilli et al. 2014
+
+    param nu: array of frequency
+    param param: array of the parameter values
+    param redshift: redshift of the source
+    return: calculated flux for the frequencies provided in the array with the given parameter
+
+    parameter array description:
+    p[0]: norm => normalisation fator in log
+    p[1]: temp => temerature of the BB in Kelvin
+    p[2]: beta => index of the slope
+    p[3]: nu_0 => pivotal frequency for the two different regime of emission in log
+    """
+    from astropy import analytic_functions
+    bbfunction = analytic_functions.blackbody.blackbody_nu
+    norm, beta, temp = param
+#    beta = 2.0
+    nu_0 = np.log10(1.5e12)
+
+    nu_rest = nu_obs * (1+redshift) # shift the frequency range to restframe
+    y_z = (10**norm)*bbfunction(nu_rest, temp).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
+    y_z *= (1. + redshift) # shift the flux to observed frame
+    return y_z
+
+def MBB_law_z(nu_obs, param):
+    """
+    Calculate the flux for a modified black body. 
+    Formula taken from Gilli et al. 2014
+
+    param nu: array of frequency
+    param param: array of the parameter values
+    param redshift: redshift of the source
+    return: calculated flux for the frequencies provided in the array with the given parameter
+
+    parameter array description:
+    p[0]: norm => normalisation fator in log
+    p[1]: temp => temerature of the BB in Kelvin
+    p[2]: beta => index of the slope
+    p[3]: nu_0 => pivotal frequency for the two different regime of emission in log
+    p[4]: redshift  => redshift
+    """
+    from astropy import analytic_functions
+    bbfunction = analytic_functions.blackbody.blackbody_nu
+    norm, temp, beta, redshift = param
+#    beta = 2.0
+    nu_0 = np.log10(1.5e12)
+
+    nu_rest = nu_obs * (1+redshift) # shift the frequency range to restframe
+    y_z = (10**norm)*bbfunction(nu_rest, temp).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
+    y_z *= (1. + redshift) # shift the flux to observed frame
+    return y_z
+
 def double_sync_law(nu, param, redshift):
     """
     Calculate the flux for a double power law with break frequency.
@@ -151,9 +206,14 @@ def double_sync_law(nu, param, redshift):
     y = np.float128(10**n*(nu*(1.+redshift)/10**nu_break)**a1) * \
         (1.-np.float128(np.exp(-1.*(10**nu_break/(nu*(1.+redshift)))**(a1-a2))))
     y /= (1+redshift)
-    y /= nu
+#    y /= nu teporary hack
     return np.float64(y)
 
+def double_power_law(nu,a,redshift,s=1.):
+    norm,nu_t,a1,a2=a
+    y = norm*nu**a1*(1.+(nu/(10**nu_t))**(np.abs(a1-a2)*s))**(np.sign(a2-a1)/s)
+    y /= (1+redshift)
+    return y
 
 def double_sync_law_z(nu, param):
     """
@@ -199,12 +259,15 @@ def absorp_double_sync_law(nu, param, redshift):
     p[5]: alpha2 => higher frequency index
     """
     n,nu_to,nu_break,a0,a1,a2=param
-    term1 = np.float128(10**n*(nu*(1.+redshift)/(10**nu_break))**a1)
-    term2 = 1.-np.float128(np.exp(-1.*(10**nu_break/(nu*(1.+redshift)))**(a1-a2)))
-    term3 = 1.-np.float128(np.exp(-1.*(10**nu_to/(nu*(1.+redshift)))**(a0-a1)))
-    y = term1*term2/term3
-    y /= (1+ redshift)
-    y /= nu
+#    term1 = np.float128((nu*(1.+redshift)/(10**nu_break))**-a1)
+#    term2 = 1.-np.float128(np.exp(-1.*(10**nu_break/(nu*(1.+redshift)))**(a1-a2)))
+#    term3 = 1.-np.float128(np.exp(-1.*(10**nu_to/(nu*(1.+redshift)))**(a0-a1)))
+#    y = 10**n*term1*term2#/term3
+    y = 10**n * np.float128((nu/10**nu_break)**a1) * \
+        (1.-np.float128(np.exp(-1.*(10**nu_break/nu)**(a1-a2)))) / \
+        (1.-np.float128(np.exp(-1.*(10**nu_to/nu)**(a0-a1))))
+#    y /= (1+ redshift)
+#    y /= nu
     return np.float64(y)
 
 def abs_double_sync_cutoff_law(nu, param, redshift):
@@ -265,3 +328,132 @@ def AGN_law(nu, param, redshift):
     y = (freq_cut/nu_z)**(-alpha) * np.exp(-freq_cut/nu_z)*(10**norm)
     y /= (1+ redshift)
     return y
+
+
+def triple_sync_law(nu,param,redshift):
+    """
+    Calculate the flux for a triple power law with two break frequencies. Inspired from the formula
+    at https://math.stackexchange.com/questions/2427089/how-do-i-smoothly-merge-two-power-laws
+    
+    :param nu: array of increasing frequency
+    :param param: array of the parameter values
+    :param redshift: redshift of the source
+    :return: the calculated flux at the provided frequency for the given parameter
+
+    parameters array description:
+    p[0]: norm => normalisation
+    p[1]: nu_b1 => low frequency break
+    p[2]: nu_b2 => high frequency break
+    p[3]: a1 => lower frequency index
+    p[4]: a2 => mid frequency index
+    p[5]: a3 => high frequency index
+    """
+    norm,nu_b1,nu_b2,a1,a2,a3=param
+    s=1.
+    y = 10**norm * (nu*(1.+redshift))**a1 * \
+        (1.+(nu*(1.+redshift)/10**nu_b1)**(np.abs(a1-a2)*s))**(np.sign(a2-a1)/s) * \
+        (1.+(nu*(1.+redshift)/10**nu_b2)**(np.abs(a2-a3)*s))**(np.sign(a3-a2)/s)
+    y /= (1.+redshift)
+    return y
+
+
+def triple_sync_law2(nu,param,redshift):
+    """
+    Calculate the flux for a triple power law with two break frequencies. Inspired from the formula
+    at https://math.stackexchange.com/questions/2427089/how-do-i-smoothly-merge-two-power-laws
+    
+    :param nu: array of increasing frequency
+    :param param: array of the parameter values
+    :param redshift: redshift of the source
+    :return: the calculated flux at the provided frequency for the given parameter
+
+    parameters array description:
+    p[0]: norm => normalisation
+    p[1]: nu_b1 => low frequency break
+    p[2]: nu_b2 => high frequency break
+    p[3]: a1 => lower frequency index
+    p[4]: a2 => mid frequency index
+    p[5]: a3 => high frequency index
+    """
+    norm,nu_b1,nu_b2,a1,a2,a3=param
+    s=1.
+    # trick to make it more stable during fitting; change of referential point
+    ref_point=np.abs(nu_b1-nu_b2)+min(nu_b1,nu_b2)
+    nu = nu / 10**ref_point
+    y = 10**norm*(nu*(1.+redshift))**a1 * \
+        (1.+(nu*(1.+redshift)/10**(nu_b1-ref_point))**(np.abs(a1-a2)*s))**(np.sign(a2-a1)/s) * \
+        (1.+(nu*(1.+redshift)/10**(nu_b2-ref_point))**(np.abs(a2-a3)*s))**(np.sign(a3-a2)/s)
+    y /= (1.+redshift)
+    return y
+
+
+def modified_BB_draine2007(nu,param,redshift):
+    """
+    Formula of modified black body to link dust mass
+    and beta (and kappa), without an extra normalisation factor
+    """
+    import astropy.constants as cst
+    from astropy.cosmology import Planck15
+    from astropy import analytic_functions
+    import astropy.units as u
+    from astropy.modeling import models
+    mdust, tdust = param
+    bb=models.BlackBody1D(tdust*u.K,bolometric_flux=cst.L_sun.to(u.erg/u.s)/(u.cm*u.cm))
+    nu_rest = nu * (1+redshift) * u.Hz # shift the frequency range to restframe
+    nu_0 = (cst.c/(250e-6*u.m)).to(u.Hz) 
+    kappa_n0= 4.0*u.cm*u.cm/u.g
+    beta=2.08
+    kappa_abs = kappa_n0.to(u.m*u.m/u.kg) * (nu_rest/nu_0)**beta
+    DL = Planck15.luminosity_distance(redshift)
+
+    y_z = bb(nu_rest) * (1+redshift) * kappa_abs.to(u.cm*u.cm/u.kg)
+    y_z *= ((10**mdust)*u.M_sun).to(u.kg)*u.kg
+    y_z /= (DL.to(u.cm) * DL.to(u.cm) * cst.M_sun)
+    return  y_z.value
+
+def modified_BB_draine2007_z(nu,param):
+    """
+    Formula of modified black body to link dust mass
+    and beta (and kappa), without an extra normalisation factor
+    """
+    import astropy.constants as cst
+    from astropy.cosmology import Planck15
+    from astropy import analytic_functions
+    import astropy.units as u
+    from astropy.modeling import models
+    mdust, tdust, redshift = param
+    bb=models.BlackBody1D(tdust*u.K,bolometric_flux=cst.L_sun.to(u.erg/u.s)/(u.cm*u.cm))
+    nu_rest = nu * (1+redshift) * u.Hz # shift the frequency range to restframe
+    nu_0 = (cst.c/(250e-6*u.m)).to(u.Hz) 
+    kappa_n0= 4.0*u.cm*u.cm/u.g
+    beta=2.08
+    kappa_abs = kappa_n0.to(u.m*u.m/u.kg) * (nu_rest/nu_0)**beta
+    DL = Planck15.luminosity_distance(redshift)
+
+    y_z = bb(nu_rest) * (1+redshift) * kappa_abs.to(u.cm*u.cm/u.kg)
+    y_z *= ((10**mdust)*u.M_sun).to(u.kg)*u.kg
+    y_z /= (DL.to(u.cm) * DL.to(u.cm) * cst.M_sun)
+    return  y_z.value
+
+def modified_BB_draine2007beta_z(nu,param):
+    """
+    Formula of modified black body to link dust mass
+    and beta (and kappa), without an extra normalisation factor
+    """
+    import astropy.constants as cst
+    from astropy.cosmology import Planck15
+    from astropy import analytic_functions
+    import astropy.units as u
+    from astropy.modeling import models
+    mdust, tdust, beta, redshift = param
+    bb=models.BlackBody1D(tdust*u.K,bolometric_flux=cst.L_sun.to(u.erg/u.s)/(u.cm*u.cm))
+    nu_rest = nu * (1+redshift) * u.Hz # shift the frequency range to restframe
+    nu_0 = (cst.c/(250e-6*u.m)).to(u.Hz) 
+    kappa_n0= 4.0*u.cm*u.cm/u.g
+    kappa_abs = kappa_n0.to(u.m*u.m/u.kg) * (nu_rest/nu_0)**beta
+    DL = Planck15.luminosity_distance(redshift)
+
+    y_z = bb(nu_rest) * (1+redshift) * kappa_abs.to(u.cm*u.cm/u.kg)
+    y_z *= ((10**mdust)*u.M_sun).to(u.kg)*u.kg
+    y_z /= (DL.to(u.cm) * DL.to(u.cm) * cst.M_sun)
+    return  y_z.value

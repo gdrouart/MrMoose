@@ -17,7 +17,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
 
-import mrmoose as mm
+from . import mrmoose as mm
 import glob
 import numpy as np
 import pathos.multiprocessing as mp
@@ -28,8 +28,8 @@ def herd(list_input):
 
     ndim = len(list_input)
     Parallel_cpu = mp.cpu_count()  # take the number of CPUs
-    print '# files: ', ndim
-    print '# cores: ', Parallel_cpu
+    print('# files: ', ndim)
+    print('# cores: ', Parallel_cpu)
 
     # create the pool of jobs
     pool = mp.ProcessingPool(Parallel_cpu)

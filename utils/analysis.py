@@ -17,7 +17,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
 
-import mm_utilities as ut
+from . import mm_utilities as ut
 import numpy as np
 from astropy.cosmology import WMAP9 as cosmos
 from astropy import constants
@@ -51,15 +51,18 @@ def find_stats_fit(sampler, models, fit_struct, data_struct):
     ndim = len(ut.flatten_model_keyword(models, 'param'))
 
     # cut the chains before the provided cut
-    samples = sampler.chain[:, fit_struct['nsteps_cut']:, :].reshape((-1, ndim))
-    lnprob = sampler.lnprobability[:, fit_struct['nsteps_cut']:]
+#    samples = sampler.chain[:, fit_struct['nsteps_cut']:, :].reshape((-1, ndim))
+    samples = sampler.get_chain(discard=fit_struct['nsteps_cut'])
+#    lnprob = sampler.lnprobability[:, fit_struct['nsteps_cut']:]
+    lnprob = sampler.get_log_prob(discard=fit_struct['nsteps_cut'])
 
     # recover the index of the best fit
     bestML_index = np.array(np.unravel_index(lnprob.argmax(), lnprob.shape))
-    bestML_index[1] += fit_struct['nsteps_cut']
+#    bestML_index[1] += fit_struct['nsteps_cut']
 
     # extract bestfit parameters and percentiles
-    best_param = sampler.chain[bestML_index[0], bestML_index[1], :]
+    best_param = samples[bestML_index[0], bestML_index[1],:]
+#    best_param = sampler.chain[bestML_index[0], bestML_index[1], :]
     perc_param = np.percentile(samples, fit_struct['percentiles'], axis=0)
 
     # add to the model structure
@@ -69,8 +72,9 @@ def find_stats_fit(sampler, models, fit_struct, data_struct):
         models[i]['bestfit'] = best_param[lb:ub]
         models[i]['perc'] = [perc_param[j][lb:ub] for j in range(len(perc_param))]
         lb += models[i]['dim']
-    # the float() is a trick to force saving the valu in a variable and not only create a pointer
-    fit_struct['best_lnL'] = float(sampler.lnprobability[bestML_index[0], bestML_index[1]])
+    # the float() is a trick to force saving the value in a variable and not only create a pointer
+    fit_struct['best_lnL'] = float(lnprob[bestML_index[0], bestML_index[1]])
+#    fit_struct['best_lnL'] = float(sampler.lnprobability[bestML_index[0], bestML_index[1]])
 
     # TODO extract the seed number for the RNG in emcee for possible future reproduction (needs emcee and init position)
 
@@ -79,8 +83,8 @@ def find_stats_fit(sampler, models, fit_struct, data_struct):
     # consider each flux of each arrangement as one datapoint
     ndata = sum([len(elem['filter']) for i,elem in enumerate(data_struct)])
     try:
-        print "AICc calculation... still in developpement, to be used with caution"
-        penalty_factor = 2 * ndim * (ndim +1) / (ndata - ndim -1)
-        fit_struct['AICc'] = 2* ndim -2 * fit_struct['best_lnL'] + penalty_factor
+        print("AICc calculation... still in developpement, to be used with caution")
+        penalty_factor = 2*ndim*(ndim+1)/(ndata-ndim-1)
+        fit_struct['AICc'] = 2*ndim-2*fit_struct['best_lnL']+penalty_factor
     except:
-        print "AICc cannot be calculated, too many parameters compared to data"
+        print("AICc cannot be calculated, too many parameters compared to data")

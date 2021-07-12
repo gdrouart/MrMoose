@@ -19,7 +19,7 @@ GNU General Public License for more details.
 
 import numpy as np
 import itertools
-from models import *
+from .models import *
 
 def flatten_model_keyword(models, keyword):
     """Flatten the model file for the provided keyword in 1D array """
@@ -75,7 +75,7 @@ def format_sav_output(mod_struct):
 
     mod_struct_cop = copy.deepcopy(mod_struct)
     for i in range(len(mod_struct)):
-        for j in mod_struct[i].keys():
+        for j in list(mod_struct[i].keys()):
             mod_struct_cop[i][j] = np.array(mod_struct[i][j]).tolist()
     return mod_struct_cop
 
@@ -167,7 +167,7 @@ def integrate_filter(sed_nu, sed_flux, filter_nu, filter_trans):
     filter_trans_interp = np.interp(sed_nu, filter_nu, filter_trans, right=0.0, left=0.0)
 
     if min(filter_nu) < min(sed_nu) or max(filter_nu) > max(sed_nu):
-        print "filter outside range!"
+        print("filter outside range!")
         return 0.0
     else:
         # find max filter
@@ -204,7 +204,32 @@ def create_filter_gate(name, freq, trans_window, size=500, trans_value=1.0):
     return
 
 
-def twoD_Gaussian((x,y), amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
+def create_filter_ALMA_cont(name, central_freq, size=500, trans_value=1.0):
+    """
+    Create a fake filter of the gate form. transimission of 1 in a certain frequency range, 0 elsewhere.
+
+    :param name: name of the filter
+    :param central_freq: central frequency (LO setup)
+    :param size: dimension of the array
+    :param trans_value: transmission value to assume
+    """
+
+    SBB = 1.875e9
+    SB_offset = 6e9
+    wav = np.linspace(central_freq-9e9,central_freq+9e9, size)
+    trans = np.zeros(size)
+    indexmin1 = np.argmin(np.abs(wav-(central_freq-SB_offset-SBB)))
+    indexmax1 = np.argmin(np.abs(wav-(central_freq-SB_offset+SBB)))
+    trans[indexmin1:indexmax1] = trans_value
+    indexmin2 = np.argmin(np.abs(wav-(central_freq+SB_offset-SBB)))
+    indexmax2 = np.argmin(np.abs(wav-(central_freq+SB_offset+SBB)))
+    trans[indexmin2:indexmax2] = trans_value
+    with open(name, 'wb'):
+        np.savetxt(name, np.vstack((wav, trans)).T, header='Freq [Hz]   Transmission')
+    return
+
+
+def twoD_Gaussian(xxx_todo_changeme, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     """
     Create a 2D gaussian
 
@@ -217,6 +242,7 @@ def twoD_Gaussian((x,y), amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     :param offset: level of "background" signal
     :return: 2D array of values
     """
+    (x,y) = xxx_todo_changeme
     xo = float(xo)
     yo = float(yo)
     a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)
@@ -265,7 +291,7 @@ def create_image(namefits, RA_source, Dec_source, Flux_source, res, pixsize):
     w.wcs.ctype = ["RA-TAN",
                    "DEC-TAN"]  # projection
 
-    pix_source = w.wcs_world2pix(zip(RA_source, Dec_source), 1)
+    pix_source = w.wcs_world2pix(list(zip(RA_source, Dec_source)), 1)
 
     # Create x and y indices -- need to start one because no 0th pixel on image
     x = np.linspace(1, dim, dim)
@@ -316,7 +342,7 @@ def save_bestfit_SED(data_struct, fit_struct, model_struct):
     #TODO create a file with the SED as frequency vs flux, one column for each model
     #TODO create a header to explain each column
 
-    print "SED saving in developement, use with caution"
+    print("SED saving in developement, use with caution")
 
     tab = []
     min_data = min([min(x['lambda0']) for x in data_struct])*0.1
@@ -324,7 +350,7 @@ def save_bestfit_SED(data_struct, fit_struct, model_struct):
     xscale = 10 ** (np.linspace(np.log10(min_data), np.log10(max_data), 200))
     tab.append(xscale)
     for i_arr in range(len(data_struct)):
-        tmp_index_models = map(int, str.split(data_struct[i_arr]['component_number'][0], ','))
+        tmp_index_models = list(map(int, str.split(data_struct[i_arr]['component_number'][0], ',')))
         for i_mod in tmp_index_models:
     # overplot best fit
             if fit_struct['redshift'][i_mod] >= 0:

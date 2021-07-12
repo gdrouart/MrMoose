@@ -17,13 +17,14 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
 
-from models import *
-import mm_utilities as ut
+from . models import *
+from . import mm_utilities as ut
 import scipy.special
 import pathos.multiprocessing as mp
 from tqdm import tqdm
 import emcee
-import cPickle as pickle
+import pickle as pickle
+import os.path
 
 def calc_chi2(obs_flux, error, model):
     """
@@ -86,7 +87,7 @@ def lnlike(theta, fit_struct, data, filters, param, detection_mask):
         # make a list of list containing the number index of the model functions to use,
         # in the case of several models for
         # the same data point, the list element will be a list of numbers
-        number_of_component.append(map(int, str.split(data[i]['component_number'][0], ',')))
+        number_of_component.append(list(map(int, str.split(data[i]['component_number'][0], ','))))
 
         # call on the model functions via globals()
         # selects the right model (sync_lax or BB_law) via the name from parameter['func']
@@ -161,6 +162,7 @@ def lnprior(theta, models):
     """
 
     # defining priors, here only uniform possible for now
+    #type_func = ut.flatten_model_keyword(models, 'type')
     tmin = ut.flatten_model_keyword(models, 'min')
     tmax = ut.flatten_model_keyword(models, 'max')
 
@@ -168,10 +170,20 @@ def lnprior(theta, models):
     theta = theta.flatten()
 
     list_prior = [0.0 if tmin[i] < theta[i] < tmax[i] else -np.inf for i in range(len(tmin))]
+
+    # list_prior = 0
+    # for i in range(len(tmin)):
+    #     if type_func[i] == 'uniform':
+    #         list_prior += 0.0 if tmin[i] < theta[i] < tmax[i] else -np.inf
+    #     else if type_func[i] == 'normal':
+    #         list_prior += np.log10(1/(tmax[i]*(2.*np.pi)**0.5)-0.5*(param-tmin[i])**2/(tmin[i]**2)
+    #     else:
+    #         print "pb"
+    #         sys.exit()
+    
     return sum(list_prior)
 
 def lnprob(theta, fit_struct, data, filters, models, detection_mask):
-    # TODO implement redshift as free parameter
     # TODO implement non-uniform prior (see lnprior function)
     """
     This is the function that is called in the emcee MCMC process,it checks so that the current
@@ -206,37 +218,71 @@ def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0)
     flat_max = ut.flatten_model_keyword(model_struct, 'max')
     coef_param = np.array([(flat_max - flat_min) / 2.]).flatten()
 
-    # initiate the walkers "ball"
+    # # initiate the walkers "ball" - TODO update with emcee function
+    # if os.path.isfile(fit_struct['sampler_file']):
+    #     print("file found at ",fit_struct['sampler_file'])
+    #     #with open(fit_struct['sampler_file'],"rb") as f:
+    #     #    chain = pickle.load(f)
+    #     #last_index = chain.chain[0].nonzero()[0][-1]
+    #     #print last_index
+    #     #pos = [chain.chain[i][last_index] for i in range(fit_struct['nwalkers'])]
+    # else:
     pos = [flat_param + 1e-4 * coef_param * np.random.randn(ndim) for i in range(fit_struct['nwalkers'])]
+    print("initialise walker positions")
+    last_index = 0
 
-    print
-    print 'HMC attempt for ' + fit_struct['source']
+    print()
+    print('HMC attempt for ' + fit_struct['source'])
     # single processor
+#    if os.path.isfile(fit_struct['sampler_file']):
+#        with open(fit_struct['sampler_file'],"rb") as f:
+#            sampler = pickle.load(f)
+#    else:
+    # create the backend
+    filename = fit_struct['sampler_file']
+    backend = emcee.backends.HDFBackend(filename)
+    # if restart:
+    #     print('continuing last run')
+    # else:
+    #     backend.reset(fit_struct['nwalkers'],ndim)
+    backend.reset(fit_struct['nwalkers'],ndim)
+
     if Parallel == 0:
         sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
-                                        args=(fit_struct, data_struct, filter_struct, model_struct, detection_mask))
+                                        args=(fit_struct, data_struct, filter_struct, model_struct, detection_mask), backend=backend)
     else:
         # multi-processing (pool created via pathos, allow to pickle the sampler)
         tmp_pool = mp.ProcessingPool(Parallel)
         sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
-                                        args=(data_struct, filter_struct, model_struct, detection_mask, fit_struct['redshift']),
-                                        pool=tmp_pool)
-
+                                        args=(data_struct, filter_struct, model_selftruct, detection_mask, fit_struct['redshift']),
+                                        pool=tmp_pool, backend=backend)
+            
     # progress bar (work for multiprocess or single process)
-#    with tqdm(total=fit_struct['nsteps']) as pbar:
-#        for i, result in enumerate(sampler.sample(pos, iterations=fit_struct['nsteps'])):
-#            pbar.update()
-#        print 'HMC done!'
+#    for sample in sampler.sample(pos,iterations=fit_source['nsteps'],progress=True):
+        
+    with tqdm(total=fit_struct['nsteps']) as pbar:
+        for i, result in enumerate(sampler.sample(pos, iterations=fit_struct['nsteps'])):
+            pbar.update()
+        print('HMC done!')
 
-    pbar = tqdm(total=fit_struct['nsteps'])
-    for i in sampler.sample(pos, iterations=fit_struct['nsteps']):
-        pbar.update()
-    print 'HMC done!'
+    #pbar = tqdm(total=fit_struct['nsteps'],initial=last_index)
+    #print fit_struct['nsteps']-last_index
 
+#    sampler.run_mcmc(None,fit_struct['nsteps'])
+
+#    for i,_ in enumerate(sampler.sample(None, fit_struct['nsteps'])):
+#        pbar.update()
+#        if i % 10 == 0:
+#            pass
+#            with open(fit_struct['sampler_file'], 'w') as output_savefile:
+#                pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
+#                print i,' sampler saved!'
+    print('HMC done!')
+
+    # TODO: transformation of chains
     # save the modified sampler (allows to save pools as well - pathos library allows to serialise pools)
-    with open(fit_struct['sampler_file'], 'wb') as output_savefile:
-        pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
-        print 'sampler saved!'
+    #with open(fit_struct['sampler_file'], 'ab') as output_savefile:
+    #    pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
+    #    print 'sampler saved!'
 
     return sampler
-
