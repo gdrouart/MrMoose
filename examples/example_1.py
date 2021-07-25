@@ -3,6 +3,9 @@ Simplest example to generate a .fit, .mod and .dat file to feed in MrMoose for
 demonstration. The model consists of a single power law and five data points 
 from a source at z=0
 """
+import sys
+# adding the path 
+sys.path.insert(0, '/Users/guillaume/Desktop/MrMoose/MrMoose/utils')
 
 import models as md
 import numpy as np
@@ -39,9 +42,10 @@ for i_filter, name_filter in enumerate(filter_name):
     fnu_mod[i_filter] = np.random.normal(tmp, fnu_err[i_filter])
 
 # create the data file
-with open('data/fake_source_ex1.dat', 'wb') as fake:
-    fake.writelines("# filter        RA              Dec        resolution  lambda0  det_type  flux   "
-                    "flux_error  arrangement  component   component_number \n")
+with open('data/fake_source_ex1.dat', 'w') as fake:
+#    fake.writelines('# filter        RA              Dec        resolution  lambda0  det_type  flux   '
+#                    'flux_error  arrangement  component   component_number \n')
+    fake.write('# filter        RA              Dec        resolution  lambda0  det_type  flux   flux_error  arrangement  component   component_number \n')
     for i_filter in range(filter_name.size-1):
         fake.write('{:15} {:15} {:15} {:5.1f} {:10e} {:5} {:10e} {:10e} {:10} {:10} {:10} \n'.format(
             filter_name[i_filter], RA_list[i_filter], Dec_list[i_filter], res_list[i_filter],
@@ -51,7 +55,7 @@ with open('data/fake_source_ex1.dat', 'wb') as fake:
         lambda0[i_filter+1], "d", fnu_mod[i_filter+1], fnu_err[i_filter+1], "1", "note", "0,"))
 
 # create the fit file
-with open('fake_source_ex1.fit', 'wb') as fake:
+with open('fake_source_ex1.fit', 'w') as fake:
     fake.write('source_file: data/fake_source_ex1.dat \n')
     fake.write('model_file: models/fake_source_ex1.mod \n')
     fake.write('all_same_redshift: True \n')
@@ -69,7 +73,7 @@ with open('fake_source_ex1.fit', 'wb') as fake:
     fake.write("unit_flux: 'Jy' \n")
 
 # create the model file
-with open('models/fake_source_ex1.mod', 'wb') as fake:
+with open('models/fake_source_ex1.mod', 'w') as fake:
     fake.write('sync_law  2 \n')
     fake.write('$N$       -25  -15 \n')
     fake.write('$\\alpha$  -2.0  0.0 \n')

@@ -20,7 +20,7 @@ GNU General Public License for more details.
 #import sys
 #sys.path.append('/Library/Python/2.7/site-packages')
 from . import mm_utilities as ut
-from .models import *
+from . models import *
 
 # TODO make a initial guess plotting
 # TODO reproduce for a nufnu plot

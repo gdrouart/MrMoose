@@ -27,9 +27,10 @@ blended at some wavelengths
 
 import astropy
 import numpy as np
-from astropy import analytic_functions
+#from astropy import analytic_functions
+import astropy.modeling.physical_models as ampm
+import astropy.units as u
 
-bbfunction = analytic_functions.blackbody.blackbody_nu
 
 # TODO have a look on optimising BB_law and AGN_law or the upper limit
 
@@ -86,11 +87,11 @@ def BB_law(x, param, redshift):
     :param redshift: The redshift z of the object
     :return: the observed flux_nu of the blackbody model
     """
-    from astropy import analytic_functions
-    bbfunction = analytic_functions.blackbody.blackbody_nu
+
     norm, temp = param
-    redshift_shifted_freq = (1 + redshift)*x
+    redshift_shifted_freq = (1 + redshift)*x*u.Hz
     stradian = 4*np.pi
+    bbfunction = ampm.Blackbody(temp*u.K)
     
     # The astropy.blackbody_nu gives the specific intensity of the blackbody ragiation in
     # units erg s^-1 cm^-2 Hz^-1 sr^-1, the specific intenisty is
@@ -98,7 +99,7 @@ def BB_law(x, param, redshift):
     # but to have a comparable quanitiy to the oberved flux we need to multiply by
     # the solid angle, which for a sphere is 4pi
     # return stradian*(10**norm)*analytic_functions.blackbody.blackbody_nu(redshift_shifted_freq, temp).value
-    y_z = stradian*(10**norm)*bbfunction(redshift_shifted_freq, temp).value
+    y_z = stradian*(10**norm)*bbfunction(redshift_shifted_freq).value
     y_z *= (1. + redshift)
     return y_z
 
@@ -117,7 +118,7 @@ def BB_law_z(x, param):
     from astropy import analytic_functions
     bbfunction = analytic_functions.blackbody.blackbody_nu
     norm, temp, redshift = param
-    redshift_shifted_freq = (1 + redshift) * x
+    redshift_shifted_freq = (1 + redshift) * x * u.Hz
     stradian = 4*np.pi
     
     # The astropy.blackbody_nu gives the specific intensity of the blackbody ragiation in
@@ -126,7 +127,7 @@ def BB_law_z(x, param):
     # but to have a comparable quanitiy to the oberved flux we need to multiply by
     # the solid angle, which for a sphere is 4pi
     # return stradian*(10**norm)*analytic_functions.blackbody.blackbody_nu(redshift_shifted_freq, temp).value
-    y_z = stradian*(10**norm)*bbfunction(redshift_shifted_freq, temp).value
+    y_z = stradian*(10**norm)*bbfunction(redshift_shifted_freq).value
     y_z /= (1. + redshift)
     return y_z
 
@@ -147,14 +148,15 @@ def MBB_law(nu_obs, param, redshift):
     p[2]: beta => index of the slope
     p[3]: nu_0 => pivotal frequency for the two different regime of emission in log
     """
-    from astropy import analytic_functions
-    bbfunction = analytic_functions.blackbody.blackbody_nu
+
+
     norm, beta, temp = param
+    bbfunction = ampm.Blackbody(temp*u.K)
 #    beta = 2.0
     nu_0 = np.log10(1.5e12)
 
-    nu_rest = nu_obs * (1+redshift) # shift the frequency range to restframe
-    y_z = (10**norm)*bbfunction(nu_rest, temp).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
+    nu_rest = nu_obs * (1+redshift) * u.Hz # shift the frequency range to restframe
+    y_z = (10**norm)*bbfunction(nu_rest).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
     y_z *= (1. + redshift) # shift the flux to observed frame
     return y_z
 
@@ -175,14 +177,15 @@ def MBB_law_z(nu_obs, param):
     p[3]: nu_0 => pivotal frequency for the two different regime of emission in log
     p[4]: redshift  => redshift
     """
-    from astropy import analytic_functions
-    bbfunction = analytic_functions.blackbody.blackbody_nu
+
+
     norm, temp, beta, redshift = param
+    bbfunction = ampm.Blackbody(temp*u.K)
 #    beta = 2.0
     nu_0 = np.log10(1.5e12)
 
-    nu_rest = nu_obs * (1+redshift) # shift the frequency range to restframe
-    y_z = (10**norm)*bbfunction(nu_rest, temp).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
+    nu_rest = nu_obs * (1+redshift) * u.Hz # shift the frequency range to restframe
+    y_z = (10**norm)*bbfunction(nu_rest).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
     y_z *= (1. + redshift) # shift the flux to observed frame
     return y_z
 
@@ -418,7 +421,7 @@ def modified_BB_draine2007_z(nu,param):
     """
     import astropy.constants as cst
     from astropy.cosmology import Planck15
-    from astropy import analytic_functions
+#    from astropy import analytic_functions
     import astropy.units as u
     from astropy.modeling import models
     mdust, tdust, redshift = param
@@ -442,7 +445,7 @@ def modified_BB_draine2007beta_z(nu,param):
     """
     import astropy.constants as cst
     from astropy.cosmology import Planck15
-    from astropy import analytic_functions
+#    from astropy import analytic_functions
     import astropy.units as u
     from astropy.modeling import models
     mdust, tdust, beta, redshift = param

@@ -19,7 +19,7 @@ GNU General Public License for more details.
 
 import numpy as np
 import itertools
-from .models import *
+from . models import *
 
 def flatten_model_keyword(models, keyword):
     """Flatten the model file for the provided keyword in 1D array """

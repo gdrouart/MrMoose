@@ -21,21 +21,19 @@ import os
 import sys
 from setuptools import setup
 
-# to update
-reqs=['pathos>=0.2.0',
+reqs=['pathos>=0.2.8',
      'tqdm>=4.8.4',
-     'scipy>=0.14.0',
-     'guppy>=0.1.10',
-     'numpy>=1.9.1',
-     'emcee>=2.2.1',
-     'corner>=2.0.1',
-     'pycallgraph>=1.0.1',
-     'matplotlib>=1.5.1',
-     'astropy>=2.0rc1',
-     'PyYAML>=3.12']
+     'scipy>=1.4.1',
+     'numpy>=1.21.1',
+     'emcee>=3.0.2',
+     'corner>=2.2.1',
+     'matplotlib>=3.4.2',
+     'astropy>=4.2.1',
+     'PyYAML>=5.4.1',
+     'h5py>=3.3.0']
 
 setup(name="MrMoose",
-      version="1.2.0b",
+      version="1.2.0",
       author="Guillaume Drouart, Theresa Falkendal",
       author_emal="guillaume.drouart@curtin.edu.au, tfalkend@eso.org",
       description="MrMoose, multi-resolution, multi-source SED fitting code, with examples",
