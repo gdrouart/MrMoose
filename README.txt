@@ -1,6 +1,6 @@
 ###############################################
 # ########################################### #
-# # MrMoose README - Current Version v1.1.0 # #
+# # MrMoose README - Current Version v1.2.0 # #
 # ########################################### #
 ###############################################
 
@@ -49,6 +49,8 @@ https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
             - correction of various bugs
             - homogeneisation of examples to free parameter redshift implementation
 * v1.2.0: update to Python 3
+            - change in file structure
+            - add the conda environement file for easier installation
 
 #############################
 # Installation instruction: #
