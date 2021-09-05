@@ -203,7 +203,7 @@ def lnprob(theta, fit_struct, data, filters, models, detection_mask):
     return lp + lnlike(theta, fit_struct, data, filters, models, detection_mask)
 
 
-def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0):
+def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0,fit_method=''):
     # detection mask to differenciate
     # the upper limits from detections
     # necessary to feed the chi2 calculation
@@ -254,35 +254,20 @@ def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0)
         # multi-processing (pool created via pathos, allow to pickle the sampler)
         tmp_pool = mp.ProcessingPool(Parallel)
         sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
-                                        args=(data_struct, filter_struct, model_selftruct, detection_mask, fit_struct['redshift']),
+                                        args=(data_struct, filter_struct, model_struct, detection_mask, fit_struct['redshift']),
                                         pool=tmp_pool, backend=backend)
             
-    # progress bar (work for multiprocess or single process)
-#    for sample in sampler.sample(pos,iterations=fit_source['nsteps'],progress=True):
-        
-    with tqdm(total=fit_struct['nsteps']) as pbar:
-        for i, result in enumerate(sampler.sample(pos, iterations=fit_struct['nsteps'])):
-            pbar.update()
+    if fit_method=='emcee':    
+        with tqdm(total=fit_struct['nsteps']) as pbar:
+            for i, result in enumerate(sampler.sample(pos, iterations=fit_struct['nsteps'])):
+                pbar.update()
         print('HMC done!')
+        return sampler
+    elif fit_method=='ultranest':
+        # TODO adding ultranest fitting here:
+        print('passed in Ultranest')
 
-    #pbar = tqdm(total=fit_struct['nsteps'],initial=last_index)
-    #print fit_struct['nsteps']-last_index
-
-#    sampler.run_mcmc(None,fit_struct['nsteps'])
-
-#    for i,_ in enumerate(sampler.sample(None, fit_struct['nsteps'])):
-#        pbar.update()
-#        if i % 10 == 0:
-#            pass
-#            with open(fit_struct['sampler_file'], 'w') as output_savefile:
-#                pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
-#                print i,' sampler saved!'
-    print('HMC done!')
-
-    # TODO: transformation of chains
-    # save the modified sampler (allows to save pools as well - pathos library allows to serialise pools)
-    #with open(fit_struct['sampler_file'], 'ab') as output_savefile:
-    #    pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
-    #    print 'sampler saved!'
-
-    return sampler
+        return sampler_un
+    else:
+        print('error, wrong fit_method provided')
+        return 0

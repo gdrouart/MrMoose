@@ -45,7 +45,7 @@ from utils import analysis as an
 # TODO burn in concept good, to put back - aside for now
 
 
-def SED_fit(settings_file, Parallel=None):
+def SED_fit(settings_file, Parallel=None,fit_method=''):
     """
     The main function - A to Z process for a single source and a single model file
     In case of multiple sources, see herd.py which propose a parallelisation over samples
@@ -132,10 +132,10 @@ def SED_fit(settings_file, Parallel=None):
         # execute fitting
         if Parallel:
             print('multi-core sampler exploration')
-            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=Parallel)
+            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=Parallel,fit_method='emcee')
         else:
             print('single-core sampler exploration')
-            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct)
+            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct,fit_method='emcee')
         print('fit completed!')
     else:
         # load the sampler if not fit
