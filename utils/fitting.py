@@ -115,45 +115,28 @@ def lnlike(theta, fit_struct, data, filters, param, detection_mask):
 
         for j in range(len(number_of_component[i])):
             if fit_struct['redshift'][number_of_component[i][j]] >= 0:
-                #print "pass positive, ", param[number_of_component[i][j]]['func']
                 temp2 = globals()[param[number_of_component[i][j]]['func']]\
                     (xscale, param[number_of_component[i][j]]['current'], fit_struct['redshift'][number_of_component[i][j]])
             else:
-                #print "pass negative, ", param[number_of_component[i][j]]['func']
                 temp2 = globals()[param[number_of_component[i][j]]['func']]\
                     (xscale, param[number_of_component[i][j]]['current'])
             temp += temp2
 
         # Making the sum of models to go through filters
-        temp_mod_filter = np.empty(data[i]['lambda0'].size)
-
-        for j, elem in enumerate(filters[i]['name']):
-            temp_mod_filter[j] = ut.integrate_filter(xscale, temp, filters[i]['wav'][j][:], filters[i]['trans'][j][:],scale_w=1e29)
+        ndim2=len(filters[i]['wav'])
+        temp_mod_filter=np.array(list(map(ut.integrate_filter,[xscale,]*ndim2,[temp,]*ndim2,
+                                 filters[i]['wav'],filters[i]['trans'],scale_w=1e29)))
 
         model_data.append(temp_mod_filter)
 
-
-        # splits data in detection or upper limits, since you need to send these ones to different chi2 functions
         detections.append(data[i][detection_mask[i]])
         model_detections.append(model_data[i][np.array(detection_mask[i])])
 
         upper_limits.append(data[i][~detection_mask[i]])
         model_upper_limits.append(model_data[i][~np.array(detection_mask[i])])
 
-
-    # calculate the total chi2 which is the main part of this function
-    chi2_classic = []
-    chi2_modified = []
-
-    for i in range(len(detections)):
-        chi2_classic.append(calc_chi2(detections[i]['flux'],
-                                      detections[i]['flux_error'],
-                                      model_detections[i]))
-
-    for i in range(len(upper_limits)):
-        chi2_modified.append(calc_chi2_mod(upper_limits[i]['flux'],
-                                           upper_limits[i]['flux_error'],
-                                           model_upper_limits[i]))
+    chi2_classic = [calc_chi2(detections[i]['flux'],detections[i]['flux_error'],model_detections[i]) for i in range(len(detections))]
+    chi2_modified = [calc_chi2_mod(upper_limits[i]['flux'],upper_limits[i]['flux_error'],model_upper_limits[i]) for i in range(len(detections))]
 
     return -(sum(chi2_classic)+sum(chi2_modified))
 
