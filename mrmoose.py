@@ -132,10 +132,10 @@ def SED_fit(settings_file, Parallel=None,fit_method=''):
         # execute fitting
         if Parallel:
             print('multi-core sampler exploration')
-            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=Parallel,fit_method='emcee')
+            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=Parallel)
         else:
             print('single-core sampler exploration')
-            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct,fit_method='emcee')
+            sampler = ft.fit_source(fit_struct, data_struct, filter_struct, model_struct)
         print('fit completed!')
     else:
         # load the sampler if not fit

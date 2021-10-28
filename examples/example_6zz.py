@@ -6,11 +6,14 @@ blended/spatially identified components, with the black bodies being at
 different redshifts (z=2 and z=4), but the z=4 black body is fitted with 
 the redshift as a free parameter. 
 """
+import sys
+# adding the path 
+sys.path.insert(0, '/Users/guillaume/Desktop/MrMoose/MrMoose/')
 
-from models import *
+from utils.models import *
 import numpy as np
-import mm_utilities as mm
-import read_files as rd
+import utils.mm_utilities as mm
+import utils.read_files as rd
 
 #def fake_sync_source():
 # define the parameters of the components of the model
@@ -99,7 +102,7 @@ for i_filter, name_filter in enumerate(filter_name):
     fnu = np.sum(fnu, axis=0)
 
     # read the filter transmission
-    nu_filter, trans_filter = rd.read_single_filter('filters/'+name_filter+'.fil')
+    nu_filter, trans_filter = rd.read_single_filter('../filters/'+name_filter+'.fil')
     # calculate the lambda0
     lambda0[i_filter] = np.average(nu_filter, weights=trans_filter)
     # perform the integration
@@ -112,9 +115,8 @@ for i_filter, name_filter in enumerate(filter_name):
 
 
 # create the data file
-with open('data/fake_source_ex6zz.dat', 'wb') as fake:
-    fake.writelines("# filter        RA              Dec        resolution  lambda0  det_type  flux   "
-                    "flux_error  arrangement  component   component_number \n")
+with open('../data/fake_source_ex6zz.dat', 'w') as fake:
+    fake.write('# filter        RA              Dec        resolution  lambda0  det_type  flux   flux_error  arrangement  component   component_number \n')
     for i in range(filter_name.size-1):
         fake.write('{:15} {:15} {:15} {:5.1f} {:10e} {:5} {:10e} {:10e} {:10} {:10} {:10} \n'.format(
             filter_name[i], RA_list[i], Dec_list[i], res_list[i],
@@ -124,7 +126,7 @@ with open('data/fake_source_ex6zz.dat', 'wb') as fake:
         lambda0[i+1], data_nature[i+1], fnu_mod[i+1], fnu_err[i+1], arrangement[i+1], notes[i+1], comp_number[i+1]))
 
 # create the fit file
-with open('fake_source_ex6zz.fit', 'wb') as fake:
+with open('../fake_source_ex6zz.fit', 'w') as fake:
     fake.write('source_file: data/fake_source_ex6zz.dat \n')
     fake.write('model_file: models/fake_source_ex6zz.mod \n')
     fake.write('all_same_redshift: False \n')
@@ -142,7 +144,7 @@ with open('fake_source_ex6zz.fit', 'wb') as fake:
     fake.write("unit_flux: 'Jy' \n")
 
 # create the model file with the redshift of the second component as unkonwn
-with open('models/fake_source_ex6zz.mod', 'wb') as fake:
+with open('../models/fake_source_ex6zz.mod', 'w') as fake:
     fake.write('sync_law  2 \n')
     fake.write('$N_{s1}$   -22  -12 \n')
     fake.write('$\\alpha_{s1}$ -3.5  -0.5 \n')

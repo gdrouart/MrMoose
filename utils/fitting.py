@@ -22,9 +22,15 @@ from . import mm_utilities as ut
 import scipy.special
 import pathos.multiprocessing as mp
 from tqdm import tqdm
-import emcee
+import emcee,ultranest
 import pickle as pickle
 import os.path
+import logging
+
+#create a logger
+logger = logging.getLogger('mylogger')
+#set logging level
+logger.setLevel(logging.DEBUG)
 
 def calc_chi2(obs_flux, error, model):
     """
@@ -161,6 +167,7 @@ def lnprior(theta, models):
     :return: Zero or -inf, if the guess are within the allowed parameter space or not
     """
 
+    logger.debug(theta.shape)
     # defining priors, here only uniform possible for now
     #type_func = ut.flatten_model_keyword(models, 'type')
     tmin = ut.flatten_model_keyword(models, 'min')
@@ -168,6 +175,7 @@ def lnprior(theta, models):
 
     # trick to get the dimension of table right...
     theta = theta.flatten()
+    # print(theta.shape)
 
     list_prior = [0.0 if tmin[i] < theta[i] < tmax[i] else -np.inf for i in range(len(tmin))]
 
@@ -182,6 +190,23 @@ def lnprior(theta, models):
     #         sys.exit()
     
     return sum(list_prior)
+
+def lnprior_un(theta,models):
+    """
+    This function check if current guess is in prior range. Ultranest implementation.
+    Priors transformation in the 0 - 1 range. Only support uniform, same input file.
+
+    :param theta: The free parameters that are to be fitted
+    :param models: Contains the min and max values of the prior
+    :return: Zero or -inf, if the guess are within the allowed parameter space or not
+    """
+    tmin = ut.flatten_model_keyword(models, 'min')
+    tmax = ut.flatten_model_keyword(models, 'max')
+    theta = theta.flatten()
+    list_prior=np.zeros(tmin.size)
+    for i,elem in enumerate(theta):
+        list_prior[i] = elem*np.abs(tmax[i]-tmin[i])+tmin[i]
+    return list_prior
 
 def lnprob(theta, fit_struct, data, filters, models, detection_mask):
     # TODO implement non-uniform prior (see lnprior function)
@@ -202,8 +227,27 @@ def lnprob(theta, fit_struct, data, filters, models, detection_mask):
         return -np.inf
     return lp + lnlike(theta, fit_struct, data, filters, models, detection_mask)
 
+def decorator_like(fit_struct, data_struct, filter_struct, model_struct, detection_mask):
+    """
+    Decorator for the likelihood function in Ultranest
+    """
+    def outer(fnc):
+        def inner(*args,**kwargs):
+            return fnc(*args, fit_struct, data_struct, filter_struct, model_struct, detection_mask)
+        return inner
+    return outer
 
-def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0,fit_method=''):
+def decorator_prior(model_struct):
+    """
+    Decorator for the prior function in Ultranest
+    """
+    def outer(fnc):
+        def inner(*args,**kwargs):
+            return fnc(*args, model_struct)
+        return inner
+    return outer
+
+def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0):
     # detection mask to differenciate
     # the upper limits from detections
     # necessary to feed the chi2 calculation
@@ -257,17 +301,50 @@ def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0,
                                         args=(data_struct, filter_struct, model_struct, detection_mask, fit_struct['redshift']),
                                         pool=tmp_pool, backend=backend)
             
-    if fit_method=='emcee':    
+    # progress bar (work for multiprocess or single process)
+#    for sample in sampler.sample(pos,iterations=fit_source['nsteps'],progress=True):
+    if fit_struct['fit_method']=='emcee': 
         with tqdm(total=fit_struct['nsteps']) as pbar:
             for i, result in enumerate(sampler.sample(pos, iterations=fit_struct['nsteps'])):
                 pbar.update()
-        print('HMC done!')
-        return sampler
-    elif fit_method=='ultranest':
-        # TODO adding ultranest fitting here:
-        print('passed in Ultranest')
+            print('HMC done!')
 
-        return sampler_un
+    #pbar = tqdm(total=fit_struct['nsteps'],initial=last_index)
+    #print fit_struct['nsteps']-last_index
+
+#    sampler.run_mcmc(None,fit_struct['nsteps'])
+
+#    for i,_ in enumerate(sampler.sample(None, fit_struct['nsteps'])):
+#        pbar.update()
+#        if i % 10 == 0:
+#            pass
+#            with open(fit_struct['sampler_file'], 'w') as output_savefile:
+#                pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
+#                print i,' sampler saved!'
+    #print('HMC done!')
+
+    # TODO: transformation of chains
+    # save the modified sampler (allows to save pools as well - pathos library allows to serialise pools)
+    #with open(fit_struct['sampler_file'], 'ab') as output_savefile:
+    #    pickle.dump(sampler, output_savefile, pickle.HIGHEST_PROTOCOL)
+    #    print 'sampler saved!'
+
+        return sampler
+    elif fit_struct['fit_method']=='ultranest':
+        param_names=list(ut.flatten_model_keyword(model_struct,'param'))
+
+        # create the inputs functions from decorators
+        @decorator_like(fit_struct, data_struct, filter_struct, model_struct, detection_mask)
+        def like_func(theta,*args):
+            return lnlike(theta,*args)
+        @decorator_prior(model_struct)
+        def prior_func(theta,*args):
+            return lnprior_un(theta,*args)
+
+        sampler_un = ultranest.ReactiveNestedSampler(param_names, like_func, prior_func)
+        result=sampler_un.run()
+        print('Ultranest done!')
+        return result
     else:
         print('error, wrong fit_method provided')
         return 0

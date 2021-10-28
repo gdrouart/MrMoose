@@ -91,7 +91,7 @@ def BB_law(x, param, redshift):
     norm, temp = param
     redshift_shifted_freq = (1 + redshift)*x*u.Hz
     stradian = 4*np.pi
-    bbfunction = ampm.Blackbody(temp*u.K)
+    bbfunction = ampm.BlackBody(temp*u.K)
     
     # The astropy.blackbody_nu gives the specific intensity of the blackbody ragiation in
     # units erg s^-1 cm^-2 Hz^-1 sr^-1, the specific intenisty is
@@ -151,12 +151,12 @@ def MBB_law(nu_obs, param, redshift):
 
 
     norm, beta, temp = param
-    bbfunction = ampm.Blackbody(temp*u.K)
+    bbfunction = ampm.BlackBody(temp*u.K)
 #    beta = 2.0
     nu_0 = np.log10(1.5e12)
 
     nu_rest = nu_obs * (1+redshift) * u.Hz # shift the frequency range to restframe
-    y_z = (10**norm)*bbfunction(nu_rest).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
+    y_z = (10**norm)*bbfunction(nu_rest).value * (1. - np.exp(-1.0*(nu_rest.value/10**nu_0)**beta))
     y_z *= (1. + redshift) # shift the flux to observed frame
     return y_z
 
@@ -180,12 +180,12 @@ def MBB_law_z(nu_obs, param):
 
 
     norm, temp, beta, redshift = param
-    bbfunction = ampm.Blackbody(temp*u.K)
+    bbfunction = ampm.BlackBody(temp*u.K)
 #    beta = 2.0
     nu_0 = np.log10(1.5e12)
 
     nu_rest = nu_obs * (1+redshift) * u.Hz # shift the frequency range to restframe
-    y_z = (10**norm)*bbfunction(nu_rest).value * (1. - np.exp(-1.0*(nu_rest/10**nu_0)**beta))
+    y_z = (10**norm)*bbfunction(nu_rest).value * (1. - np.exp(-1.0*(nu_rest.value/10**nu_0)**beta))
     y_z *= (1. + redshift) # shift the flux to observed frame
     return y_z
 
@@ -272,28 +272,6 @@ def absorp_double_sync_law(nu, param, redshift):
 #    y /= (1+ redshift)
 #    y /= nu
     return np.float64(y)
-
-def abs_double_sync_cutoff_law(nu, param, redshift):
-    """
-    calculate the flux for a double powerlaw, absorption at low frequency and cut-off at 
-    high frequency. Contains 3 spectral index and 3 break frequencies.
-
-    :param nu: array of increasing frequency (in log)
-    :param param: array of the parameter values
-    :param redshift: redshift of the source
-    :return: the calculated flux at the provided frequency array with the given parameters
-
-    parameters array description:
-    p[0]: norm => normalisation factor in log
-    p[1]: nu_to => frequency where tau=1 (optically thick/thin transition) in log
-    p[2]: nu_break => break in higher frequency spectral index in log
-    p[3]: nu_co => cut-off frequency in log
-    p[4]: alpha0 => absorption index
-    p[5]: alpha1 => lower frequency index
-    p[6]: alpha2 => higher frequency index
-    """
-
-    return y
 
 def Polletta2000_SSRQ(nu, param, redshift):
     """

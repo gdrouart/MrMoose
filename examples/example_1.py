@@ -5,12 +5,12 @@ from a source at z=0
 """
 import sys
 # adding the path 
-sys.path.insert(0, '/Users/guillaume/Desktop/MrMoose/MrMoose/utils')
+sys.path.insert(0, '/Users/guillaume/Desktop/MrMoose/MrMoose/')
 
-import models as md
+import utils.models as md
 import numpy as np
-import mm_utilities as mm
-import read_files as rd
+import utils.mm_utilities as mm
+import utils.read_files as rd
 
 alpha = -1.0
 norm = 1.0
@@ -32,7 +32,7 @@ lambda0 = np.zeros(filter_name.size)
 # run through the filters
 for i_filter, name_filter in enumerate(filter_name):
     # read the filter transmission
-    nu_filter, trans_filter = rd.read_single_filter('filters/'+name_filter+'.fil')
+    nu_filter, trans_filter = rd.read_single_filter('../filters/'+name_filter+'.fil')
     # calculate the lambda0
     lambda0[i_filter] = np.average(nu_filter, weights=trans_filter)
     # perform the integration
@@ -42,7 +42,7 @@ for i_filter, name_filter in enumerate(filter_name):
     fnu_mod[i_filter] = np.random.normal(tmp, fnu_err[i_filter])
 
 # create the data file
-with open('data/fake_source_ex1.dat', 'w') as fake:
+with open('../data/fake_source_ex1.dat', 'w') as fake:
 #    fake.writelines('# filter        RA              Dec        resolution  lambda0  det_type  flux   '
 #                    'flux_error  arrangement  component   component_number \n')
     fake.write('# filter        RA              Dec        resolution  lambda0  det_type  flux   flux_error  arrangement  component   component_number \n')
@@ -55,7 +55,7 @@ with open('data/fake_source_ex1.dat', 'w') as fake:
         lambda0[i_filter+1], "d", fnu_mod[i_filter+1], fnu_err[i_filter+1], "1", "note", "0,"))
 
 # create the fit file
-with open('fake_source_ex1.fit', 'w') as fake:
+with open('../fake_source_ex1.fit', 'w') as fake:
     fake.write('source_file: data/fake_source_ex1.dat \n')
     fake.write('model_file: models/fake_source_ex1.mod \n')
     fake.write('all_same_redshift: True \n')
@@ -73,7 +73,7 @@ with open('fake_source_ex1.fit', 'w') as fake:
     fake.write("unit_flux: 'Jy' \n")
 
 # create the model file
-with open('models/fake_source_ex1.mod', 'w') as fake:
+with open('../models/fake_source_ex1.mod', 'w') as fake:
     fake.write('sync_law  2 \n')
     fake.write('$N$       -25  -15 \n')
     fake.write('$\\alpha$  -2.0  0.0 \n')

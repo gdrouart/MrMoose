@@ -4,10 +4,14 @@ demonstration. The model consists of a single power law and five data points
 from a source at z=1
 """
 
-import models as md
+import sys
+# adding the path 
+sys.path.insert(0, '/Users/guillaume/Desktop/MrMoose/MrMoose/')
+
+import utils.models as md
 import numpy as np
-import mm_utilities as mm
-import read_files as rd
+import utils.mm_utilities as mm
+import utils.read_files as rd
 
 alpha = -1.0
 norm = 1.0
@@ -29,7 +33,7 @@ lambda0 = np.zeros(filter_name.size)
 # run through the filters
 for i_filter, name_filter in enumerate(filter_name):
     # read the filter transmission
-    nu_filter, trans_filter = rd.read_single_filter('filters/'+name_filter+'.fil')
+    nu_filter, trans_filter = rd.read_single_filter('../filters/'+name_filter+'.fil')
     # calculate the lambda0
     lambda0[i_filter] = np.average(nu_filter, weights=trans_filter)
     # perform the integration
@@ -39,9 +43,8 @@ for i_filter, name_filter in enumerate(filter_name):
     fnu_mod[i_filter] = np.random.normal(tmp, fnu_err[i_filter])
 
 # create the data file
-with open('data/fake_source_ex1b.dat', 'wb') as fake:
-    fake.writelines("# filter        RA              Dec        resolution  lambda0  det_type  flux   "
-                    "flux_error  arrangement  component   component_number \n")
+with open('../data/fake_source_ex1b.dat', 'w') as fake:
+    fake.write("# filter        RA              Dec        resolution  lambda0  det_type  flux   flux_error  arrangement  component   component_number \n")
     for i_filter in range(filter_name.size-1):
         fake.write('{:15} {:15} {:15} {:5.1f} {:10e} {:5} {:10e} {:10e} {:10} {:10} {:10} \n'.format(
             filter_name[i_filter], RA_list[i_filter], Dec_list[i_filter], res_list[i_filter],
@@ -51,11 +54,11 @@ with open('data/fake_source_ex1b.dat', 'wb') as fake:
         lambda0[i_filter+1], "d", fnu_mod[i_filter+1], fnu_err[i_filter+1], "1", "note", "0,"))
 
 # create the fit file
-with open('fake_source_ex1b.fit', 'wb') as fake:
+with open('../fake_source_ex1b.fit', 'w') as fake:
     fake.write('source_file: data/fake_source_ex1b.dat \n')
     fake.write('model_file: models/fake_source_ex1b.mod \n')
     fake.write('all_same_redshift: True \n')
-    fake.write('redshift: ['+str(redshift)+'] \n')
+    fake.write('redshift: ['+str(redshift)+',] \n')
     fake.write('nwalkers: 20 \n')
     fake.write('nsteps: 20 \n')
     fake.write('nsteps_cut: 18 \n')
@@ -69,7 +72,7 @@ with open('fake_source_ex1b.fit', 'wb') as fake:
     fake.write("unit_flux: 'Jy' \n")
 
 # create the model file
-with open('models/fake_source_ex1b.mod', 'wb') as fake:
+with open('../models/fake_source_ex1b.mod', 'w') as fake:
     fake.write('sync_law  2 \n')
     fake.write('$N$       -25  -15 \n')
     fake.write('$\\alpha$  -2.0  0.0 \n')

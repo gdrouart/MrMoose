@@ -90,7 +90,7 @@ for i_filter, name_filter in enumerate(filter_name):
         fnu_err[i_filter] = fnu_mod[i_filter]
 
 # create the data file
-with open('data/fake_source_ex6.dat', 'wb') as fake:
+with open('data/fake_source_ex6.dat', 'w') as fake:
     fake.writelines("# filter        RA              Dec        resolution  lambda0  det_type  flux   "
                     "flux_error  arrangement  component   component_number \n")
     for i in range(filter_name.size-1):
@@ -102,7 +102,7 @@ with open('data/fake_source_ex6.dat', 'wb') as fake:
         lambda0[i+1], data_nature[i+1], fnu_mod[i+1], fnu_err[i+1], arrangement[i+1], notes[i+1], comp_number[i+1]))
 
 # create the fit file
-with open('fake_source_ex6.fit', 'wb') as fake:
+with open('fake_source_ex6.fit', 'w') as fake:
     fake.write('source_file: data/fake_source_ex6.dat \n')
     fake.write('model_file: models/fake_source_ex6.mod \n')
     fake.write('all_same_redshift: True \n')
@@ -120,7 +120,7 @@ with open('fake_source_ex6.fit', 'wb') as fake:
     fake.write("unit_flux: 'Jy' \n")
 
 # create the model file
-with open('models/fake_source_ex6.mod', 'wb') as fake:
+with open('models/fake_source_ex6.mod', 'w') as fake:
     fake.write('AGN_law  2 \n')
     fake.write('$N_{AGN}$   -38  -28 \n')
     fake.write('$\\alpha_{AGN}$ -4.0  0.0 \n')
