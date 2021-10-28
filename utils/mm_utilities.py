@@ -154,7 +154,7 @@ def add_filenames(fit_struct):
     return fit_struct
 
 
-def integrate_filter(sed_nu, sed_flux, filter_nu, filter_trans):
+def integrate_filter_old(sed_nu, sed_flux, filter_nu, filter_trans):
     """
     Function integrating SED flux over a specific filter
 
@@ -182,6 +182,26 @@ def integrate_filter(sed_nu, sed_flux, filter_nu, filter_trans):
             k1 = scale_w * np.trapz((sed_flux * sed_nu / scale_w) * filter_trans_interp, x=sed_nu)
         k2 = np.trapz(sed_nu * filter_trans_interp, x=sed_nu)
         return k1 / k2
+
+def integrate_filter(sed_nu, sed_flux, filter_nu, filter_trans, scale_w=1.0):
+    """
+    Function integrating SED flux over a specific filter
+
+    :param sed_nu: array of frequencies of the SED
+    :param sed_flux: array of flux of the SED (at each frequency)
+    :param filter_nu: array of frequencies of the filter
+    :param filter_trans: array of transmission of the filter at each frequency
+    :param scale_w: scaling value to avoid overflow during integration
+    :return: integrated flux
+    """
+    filter_trans_interp = np.interp(sed_nu, filter_nu, filter_trans, right=0.0, left=0.0)
+    try: 
+        k1 = scale_w * np.trapz((sed_flux * sed_nu / scale_w) * filter_trans_interp, x=sed_nu)
+        k2 = np.trapz(sed_nu * filter_trans_interp, x=sed_nu)
+        return k1 / k2
+    except:
+        print('Filter outside of range or other problem, returning 0.')
+        return 0.
 
 
 def create_filter_gate(name, freq, trans_window, size=500, trans_value=1.0):

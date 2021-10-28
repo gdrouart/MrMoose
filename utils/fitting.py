@@ -128,7 +128,7 @@ def lnlike(theta, fit_struct, data, filters, param, detection_mask):
         temp_mod_filter = np.empty(data[i]['lambda0'].size)
 
         for j, elem in enumerate(filters[i]['name']):
-            temp_mod_filter[j] = ut.integrate_filter(xscale, temp, filters[i]['wav'][j][:], filters[i]['trans'][j][:],scale=1e29)
+            temp_mod_filter[j] = ut.integrate_filter(xscale, temp, filters[i]['wav'][j][:], filters[i]['trans'][j][:],scale_w=1e29)
 
         model_data.append(temp_mod_filter)
 
