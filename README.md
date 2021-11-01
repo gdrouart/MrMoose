@@ -1,10 +1,7 @@
-###############################################
-# ########################################### #
-# # MrMoose README - Current Version v1.2.0 # #
-# ########################################### #
-###############################################
 
-Table of contents:
+# MrMoose README - Current Version v2.0.0
+
+## Table of contents:
 * Presentation
 * References
 * Last updates
@@ -15,9 +12,7 @@ Table of contents:
 * Compilation of tips and tricks
 
 
-#################
-# Presentation: #
-#################
+## Presentation:
 MrMoose stands for Multi-Resolution Multi-Object/Origin Spectral Energy distribution fitting procedure.
 In a nutshell, this code allows to fit user-defined models onto a set of multi-wavelength data using a
 Bayesian framework. The code is shared with multiple examples to demonstrate its capabilities and allow
@@ -29,16 +24,12 @@ emcee sampler object (.pkl) allowing users to tranfer the output to personnal gr
 a much more efficient package for parameter space exploration is available. It is recommanded to prefer it over emcee
 given the significant gain in performance and behaviour. 
 
-###############
-# References: #
-###############
+## References: #
 If using this code, please refer to the published paper or the ascl link of the code:
 https://ui.adsabs.harvard.edu/abs/2018MNRAS.477.4981D/abstract 
 https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
 
-#####################################
-# Last updates, main modifications: #
-#####################################
+## Last updates, main modifications:
 * v1.0.0: public release
 * v1.0.1: correctif release
             - correction of the dump fit_struct in the .sav file to be human readable
@@ -56,9 +47,7 @@ https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
             - refactoring of core functions for performance gain
             - v2.0 with Ultranest is about 100 times faster compared to v1.2 emcee
 
-#############################
-# Installation instruction: #
-#############################
+# Installation instruction:
 Download MrMoose from github, either by running in a terminal (require git to be installed)
 git clone https://github.com/gdrouart/MrMoose.git
 (or as a standard .zip file from the same url in a browser)
@@ -69,9 +58,7 @@ python install setup.py
 Add the path to MrMoose in your PYTHONPATH variable in your .bashrc or .profile to be called on demand
 export PYTHONPATH=Your_path_to_MrMoose_directory:$PYTHONPATH
 
-#############
-# First run #
-#############
+# First run
 We summarise here the first run of MrMoose. Under ipython for instance
 >run example1.py
 will create three files, with the following path:
@@ -94,18 +81,14 @@ Make sure you also create a data, models and outputs folders if not already exis
 >mkdir models
 >mkdir outputs
 
-############################
-# Limitations, known bugs: #
-############################
+# Limitations, known bugs:
 - Initial values set as the median of the interval of parameters - not true anymore with Ultranest
 - Require to underestimate the parameters(especially normalisation factor) in case of the presence of upper limits
 - Parallelisation on one source only is not effective, but working efficiently for sample (one source per core)
 - Only works in a python 2.7 environment and emcee 2.1, it is recommanded to create a virtual 
     environment to avoid conflicts with the most recent package versions - solved in v1.2.0
 
-########################
-# Future developments: #
-########################
+# Future developments:
 - Implementation of checkpoints to re-start chain convergence in case of crash/stops
 - Allowing different prior on the parameter (only uninformative, uniform prior in v1.0)
 - Implement Jupyter interface
@@ -116,9 +99,7 @@ Make sure you also create a data, models and outputs folders if not already exis
 - Allowing different redshift for different components, and allowing redshift as a free parameter - added in Version 1.1
 - Move the advanced feature to the setting file (.fit) as optional parameters
 
-#####################
-# Advanced features #
-#####################
+# Advanced features
 - AF_cut: in the mrmoose.py file, the option "AF_cut" can be modified to filter manually walkers below a
 given acceptance fraction(AF) value. The default value is -1, where the code filter automatically chains
 with AF<mean(AF)/2, but is not necessarily optimal in certain cases. To obtain a view of the distribution
@@ -130,9 +111,7 @@ in the mm_utilities.py file in the function named "format_plot_output".
 - AICc(in development): a number to compare different model combination directly. See Akaike Information Criteria
 definition for a description of this diagnostic tool for model comparison. 
 
-####################
-# Tips and tricks: #
-####################
+# Tips and tricks:
 We provide here some extra tips to manipulate ouputs:
 
 To compress the pdf into more handy version:
