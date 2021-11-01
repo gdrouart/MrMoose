@@ -25,8 +25,9 @@ the user to adapt it more easily to their specific requirements. MrMoose is desi
 large freedom in a user-friendly fashion, but not being user-opaque. The code can therefore handle blended sources,
 large variation in resolution, and even upper limits consistenly. It also generates a series of ouputs
 allowing for an quick interpretation of the results. The code is using the emcee package, and saving the
-emcee sampler object (.pkl) allowing users to tranfer the output to personnal graphical interface. 
-
+emcee sampler object (.pkl) allowing users to tranfer the output to personnal graphical interface. Since v1.3, Ultranest, 
+a much more efficient package for parameter space exploration is available. It is recommanded to prefer it over emcee
+given the significant gain in performance and behaviour. 
 
 ###############
 # References: #
@@ -51,6 +52,9 @@ https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
 * v1.2.0: update to Python 3
             - change in file structure
             - add the conda environement file for easier installation
+* v1.3.0: implementation of Ultranest sampler
+            - refactoring of core functions for performance gain
+            - v1.3 with Ultranest is about 100 times faster compared to v1.2 emcee
 
 #############################
 # Installation instruction: #
@@ -93,10 +97,11 @@ Make sure you also create a data, models and outputs folders if not already exis
 ############################
 # Limitations, known bugs: #
 ############################
-- Initial values set as the median of the interval of parameters
+- Initial values set as the median of the interval of parameters - not true anymore with Ultranest
 - Require to underestimate the parameters(especially normalisation factor) in case of the presence of upper limits
 - Parallelisation on one source only is not effective, but working efficiently for sample (one source per core)
-- Only works in a python 2.7 environment and emcee 2.1, it is recommanded to create a virtual environment to avoid conflicts with the most recent package versions
+- Only works in a python 2.7 environment and emcee 2.1, it is recommanded to create a virtual 
+    environment to avoid conflicts with the most recent package versions - solved in v1.2.0
 
 ########################
 # Future developments: #
