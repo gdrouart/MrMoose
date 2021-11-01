@@ -46,3 +46,4 @@ build/*
 *.fit
 *.pdf
 *.ipynb
+*#
