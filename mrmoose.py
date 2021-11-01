@@ -27,6 +27,7 @@ import time
 import pickle as pickle
 import yaml
 import emcee
+import dill
 
 # local package
 from utils import fitting as ft
@@ -139,14 +140,14 @@ def SED_fit(settings_file, Parallel=None,fit_method=''):
         print('fit completed!')
     else:
         # load the sampler if not fit
-        with open(fit_struct['sampler_file'], 'rb') as input:
-            sampler = emcee.backends.HDFBackend(fit_struct['sampler_file'], read_only=True)
-            setattr(sampler,'acceptance_fraction',sampler.accepted/sampler.get_chain().shape[0])
-#            setattr(sampler,'chain',sampler.get_chain())
-            setattr(sampler,'lnprobability',sampler.get_log_prob)
-#            sampler = emcee.backends.Backend(fit_struct['sampler_file'], read_only=True)
-#            sampler = reader.get_chain(flat=True)
-#        sampler = pickle.load(input)
+        if fit_struct['fit_method']=='ultranest':
+            with open(fit_struct['sampler_file'], 'rb') as input:
+                sampler=dill.load(input)
+        else:
+            with open(fit_struct['sampler_file'], 'rb') as input:
+                sampler = emcee.backends.HDFBackend(fit_struct['sampler_file'], read_only=True)
+                setattr(sampler,'acceptance_fraction',sampler.accepted/sampler.get_chain().shape[0])
+                setattr(sampler,'lnprobability',sampler.get_log_prob)
         print('sampler loaded!')
 
 
@@ -155,7 +156,11 @@ def SED_fit(settings_file, Parallel=None,fit_method=''):
     # print " time fitting ---%s sec ---" % (fit_time-read_time)
 
     # find the bestfit, percentiles, etc.
-    an.find_stats_fit(sampler, model_struct, fit_struct, data_struct)
+    if fit_struct['fit_method'] == 'ultranest':
+        print('under construction')
+        an.find_stats_fit_ultranest(sampler, model_struct, fit_struct, data_struct)
+    else:
+        an.find_stats_fit(sampler, model_struct, fit_struct, data_struct)
 
     ### plot the results ###
     layout = 'publication'
@@ -164,7 +169,10 @@ def SED_fit(settings_file, Parallel=None,fit_method=''):
 
     # MC Chains plot to check convergence
     if fit_struct['skip_MCChains'] == False:
-        gp.MC_Chains_plot(sampler, model_struct, fit_struct, layout=None, histo=histo, AF_cut=AF_cut)
+        if fit_struct['fit_method'] == 'ultranest':
+            gp.trace_plot(sampler, fit_struct, model_struct)
+        else:
+            gp.MC_Chains_plot(sampler, model_struct, fit_struct, layout=None, histo=histo, AF_cut=AF_cut)
     else:
         print('skip MC Chains plotting')
         pass
@@ -204,7 +212,10 @@ def SED_fit(settings_file, Parallel=None,fit_method=''):
         model_sav = ut.format_sav_output(model_struct)
         yaml.dump([fit_struct,model_sav], output,allow_unicode=True, encoding=('utf-8'))
         # save the best fit SED simultaneously
-        ut.save_bestfit_SED(data_struct, fit_struct, model_struct)
+        if fit_struct['fit_method']=='ultranest':
+            print('in construction')
+        else:
+            ut.save_bestfit_SED(data_struct, fit_struct, model_struct)
     
     return sampler, model_struct, data_struct, filter_struct, fit_struct
 

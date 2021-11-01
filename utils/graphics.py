@@ -124,6 +124,42 @@ def MC_Chains_plot(sampler, model_struct, fit_struct, light=None, AF_cut=0, layo
         fig1.savefig(fit_struct['AF_histo'])
     print('Done')
 
+def trace_plot(sampler, fit_struct, model_struct):
+    """
+    Using the plot_trace for Ultranest to generate the chains
+
+    :param sampler: object from Ultranest
+    :param fit_struct: fit parameters, varialble, filenames
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
+
+    name_tab = ut.flatten_model_keyword(model_struct, 'param')
+    min_tab = ut.flatten_model_keyword(model_struct, 'min')
+    max_tab = ut.flatten_model_keyword(model_struct, 'max')
+    dim = len(name_tab)
+    if dim <= 5:
+        max_row = dim
+        max_col = 1
+    else:
+        max_row = int(np.ceil(dim/2.))
+        max_col = 2
+
+    # fig = plt.subplots(max_row, max_col, sharex=True)
+    fig = plt.figure()
+    gs = gridspec.GridSpec(max_row, max_col)
+
+    for i in range(sampler.run_sequence['samples'].shape[1]):
+        i_x = i % 5
+        i_y = i // 5
+        ax = plt.subplot(gs[i_x, i_y])
+        ax.scatter(-sampler.run_sequence['logvol'],sampler.run_sequence['samples'][:,i],s=3,c='k')
+        ax.set_ylabel(name_tab[i])
+        if (i_x == max_row-1 and dim<=5) or (i_x==4):
+            ax.set_xlabel(r'-ln $X$')
+
+    fig.savefig(fit_struct['MCChains_plot'])
+    print('Done')
 
 def corner_plot(sampler, model_struct, fit_struct, AF_cut=0, layout=None):
     """
@@ -149,24 +185,36 @@ def corner_plot(sampler, model_struct, fit_struct, AF_cut=0, layout=None):
     name_tab = ut.flatten_model_keyword(model_struct, 'param')
     ndim = len(ut.flatten_model_keyword(model_struct, 'param'))
 
-    if AF_cut >= 0:
-        index_accep = np.where(sampler.acceptance_fraction > AF_cut)[0]
+    if fit_struct['fit_method']=='ultranest':
+        samples=np.array(sampler.results['weighted_samples']['points'])
+        weights = np.array(sampler.results['weighted_samples']['weights'])
+        cumsumweights = np.cumsum(weights)
+        mask = cumsumweights > 1e-4                   
+        print('passed in ultranest corner')
+
+        fig = corner.corner(samples[mask,:], labels=name_tab, show_titles=True, verbose=False,
+                            quantiles=[0.1,0.25,0.5,0.75,0.9], plot_contours=True, plot_density=False,
+                            levels=[0.25,0.5,0.75], fill_contours=False, no_fill_contours=True,
+                            smooth=1,weights=weights[mask])
     else:
-        index_accep = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
-    
-#    samples = sampler.chain[index_accep, fit_struct['nsteps_cut']:, :].reshape((-1, ndim))
-    samples = sampler.get_chain()[fit_struct['nsteps_cut']:, index_accep, :].reshape((-1,ndim))
-    perc_tab = np.array(fit_struct['percentiles']) * 0.01  # transformation to feed corner function
+        if AF_cut >= 0:
+            index_accep = np.where(sampler.acceptance_fraction > AF_cut)[0]
+        else:
+            index_accep = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
+        
+    #    samples = sampler.chain[index_accep, fit_struct['nsteps_cut']:, :].reshape((-1, ndim))
+        samples = sampler.get_chain()[fit_struct['nsteps_cut']:, index_accep, :].reshape((-1,ndim))
+        perc_tab = np.array(fit_struct['percentiles']) * 0.01  # transformation to feed corner function
 
-#    print(samples.shape,samples2.shape)
-    print()
-    print('Corner plot - marginalized posterior pdf of each parameter')
+    #    print(samples.shape,samples2.shape)
+        print()
+        print('Corner plot - marginalized posterior pdf of each parameter')
 
-    # calling the corner package to plot
-    fig = corner.corner(samples, labels=name_tab, show_titles=True, verbose=False,
-                        quantiles=perc_tab, plot_contours=True, plot_density=False,
-                        levels=perc_tab[1:-1], fill_contours=False, no_fill_contours=True,
-                        smooth=1)
+        # calling the corner package to plot
+        fig = corner.corner(samples, labels=name_tab, show_titles=True, verbose=False,
+                            quantiles=perc_tab, plot_contours=True, plot_density=False,
+                            levels=perc_tab[1:-1], fill_contours=False, no_fill_contours=True,
+                            smooth=1)
 
     # add the name of the source on top of the corner plot
     fig.text(0.9, 0.9, fit_struct['source'], ha='right')
@@ -456,47 +504,78 @@ def SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_struct, f
             ub = lb + model_struct[i_mod]['dim']
             tmp_color = cmap(i_mod / float(len(data_struct)))
 
-            # identify chains of good walkers (not stuck) and flag the rest
-            if AF_cut >= 0:
-                ind_walkers = np.where(sampler.acceptance_fraction > AF_cut)[0]
-            else:
-                ind_walkers = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
+            if fit_struct['fit_method'] == 'ultranest':
+                # isolating the good points of parameter space exploration
+                samples=np.array(sampler.results['weighted_samples']['points'])
+                weights = np.array(sampler.results['weighted_samples']['weights'])
+                cumsumweights = np.cumsum(weights)
+                mask = cumsumweights > 1e-4                   
 
-            # create the line list (segs) and feed in linecollection (improvement of perf for large numbers)
-            #dim_prob_full = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * fit_struct['nwalkers']
-            dim_prob = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * len(ind_walkers)
-            segs = np.zeros((dim_prob, dim_plot, 2))
-            if fit_struct['redshift'][i_mod] >= 0:
-                for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
-                    for cpt_w,i_walkers in enumerate(ind_walkers):
-#                        print(i_steps,i_walkers,sampler.chain.shape)
-#                        y_spa = globals()[model_struct[i_mod]['func']]\
-#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                dim_prob = np.arange(len(mask))[mask].size
+                segs = np.zeros((dim_prob, dim_plot, 2))
+
+                if fit_struct['redshift'][i_mod] >= 0:
+                    for cpt_s,i_steps in enumerate(np.arange(len(mask))[mask]):
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub], fit_struct['redshift'][i_mod])
-                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
-            else:
-                for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
-                    for cpt_w,i_walkers in enumerate(ind_walkers):
-                        #print i_steps,i_walkers
-#                        y_spa = globals()[model_struct[i_mod]['func']]\
-#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                            (xscale, samples[mask, lb:ub][cpt_s], fit_struct['redshift'][i_mod])
+                        segs[cpt_s, :, 1] = y_spa
+                else: 
+                    for cpt_s,i_steps in enumerate(np.arange(len(mask))[mask]):
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub])
-                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+                            (xscale, samples[mask, lb:ub][cpt_s])
+                        segs[cpt_s, :, 1] = y_spa
+            
+                segs[:, :, 0] = xscale
+                lines = LineCollection(segs, colors=tmp_color, lw=0.1, alpha=0.1)
+                ax1.add_collection(lines)
 
-            segs[:, :, 0] = xscale
-            lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
-            ax1.add_collection(lines)
-
-            # overplot best fit
-            if fit_struct['redshift'][i_mod] >= 0:
-                y_bestfit = globals()[model_struct[i_mod]['func']]\
-                    (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+                # overplot the bestfit
+                if fit_struct['redshift'][i_mod] >= 0:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+                    ax1.plot(xscale, y_bestfit, color='k', ls='-')
+                else:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'])
             else:
-                y_bestfit = globals()[model_struct[i_mod]['func']]\
-                    (xscale, model_struct[i_mod]['bestfit'])
-            ax1.plot(xscale, y_bestfit, color='k', ls='-')
+                # identify chains of good walkers (not stuck) and flag the rest
+                if AF_cut >= 0:
+                    ind_walkers = np.where(sampler.acceptance_fraction > AF_cut)[0]
+                else:
+                    ind_walkers = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
+
+                # create the line list (segs) and feed in linecollection (improvement of perf for large numbers)
+                #dim_prob_full = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * fit_struct['nwalkers']
+                dim_prob = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * len(ind_walkers)
+                segs = np.zeros((dim_prob, dim_plot, 2))
+                tmp_params = sampler.get_chain()[i_steps, i_walkers, lb:ub]
+
+                if fit_struct['redshift'][i_mod] >= 0:
+                    for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                        for cpt_w,i_walkers in enumerate(ind_walkers):
+                            y_spa = globals()[model_struct[i_mod]['func']]\
+                                (xscale, tmp_params, fit_struct['redshift'][i_mod])
+                            segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+                else:
+                    for cpt_s,i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                        for cpt_w,i_walkers in enumerate(ind_walkers):
+                            y_spa = globals()[model_struct[i_mod]['func']]\
+                                (xscale, tmp_params)
+                            segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+
+                segs[:, :, 0] = xscale
+                lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
+                ax1.add_collection(lines)
+
+                # overplot best fit
+                if fit_struct['redshift'][i_mod] >= 0:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+                else:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'])
+                ax1.plot(xscale, y_bestfit, color='k', ls='-')
+
 
         ax1.errorbar(filter_struct[i_arr]['center'][mask_d],
                      data_struct[i_arr]['flux'][mask_d],

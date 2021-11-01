@@ -135,8 +135,12 @@ def add_filenames(fit_struct):
     fit_struct['source'] = '.'.join(str.split(str.split(fit_struct['source_file'], '/')[-1], '.')[:-1])
 
     directory = 'outputs/'
-    suffix = fit_struct['source'] + '_' + fit_struct['model'] \
-             + '_w' + str(fit_struct['nwalkers']) + '_s' + str(fit_struct['nsteps'])
+    if fit_struct['fit_method']=='ultranest':
+        suffix = fit_struct['source'] + '_' + fit_struct['model'] \
+            + '_ultranest'
+    else:
+        suffix = fit_struct['source'] + '_' + fit_struct['model'] \
+                 + '_w' + str(fit_struct['nwalkers']) + '_s' + str(fit_struct['nsteps'])
 
     fit_struct['triangle_plot'] = directory + suffix + '_triangle.pdf'
     fit_struct['MCChains_plot'] = directory + suffix + '_MCChains.pdf'
@@ -148,7 +152,7 @@ def add_filenames(fit_struct):
     fit_struct['SED_fnu_margplot'] = directory + suffix + '_SED_fnu_marg.pdf'
     fit_struct['SED_fnu_splitmargplot'] = directory + suffix + '_SED_fnu_marg_split.pdf'  # TODO
     #fit_struct['SED_nufnu_plot'] = directory + suffix + '_SED_nufnu.pdf'
-    fit_struct['SED_file'] = directory + suffix + '.sed'  # TODO
+    fit_struct['SED_file'] = directory + suffix + '.sed' 
     fit_struct['sampler_file'] = directory + suffix + '.pkl'
     fit_struct['save_struct'] = directory + suffix + '.sav'
     return fit_struct
@@ -183,7 +187,7 @@ def integrate_filter_old(sed_nu, sed_flux, filter_nu, filter_trans):
         k2 = np.trapz(sed_nu * filter_trans_interp, x=sed_nu)
         return k1 / k2
 
-def integrate_filter(sed_nu, sed_flux, filter_nu, filter_trans, scale_w=1.0):
+def integrate_filter(sed_nu, sed_flux, filter_nu, filter_trans, scale_w=1e29):
     """
     Function integrating SED flux over a specific filter
 

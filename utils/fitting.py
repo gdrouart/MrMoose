@@ -26,6 +26,7 @@ import emcee,ultranest
 import pickle as pickle
 import os.path
 import logging
+import dill
 
 #create a logger
 logger = logging.getLogger('mylogger')
@@ -124,8 +125,7 @@ def lnlike(theta, fit_struct, data, filters, param, detection_mask):
 
         # Making the sum of models to go through filters
         ndim2=len(filters[i]['wav'])
-        temp_mod_filter=np.array(list(map(ut.integrate_filter,[xscale,]*ndim2,[temp,]*ndim2,
-                                 filters[i]['wav'],filters[i]['trans'],scale_w=1e29)))
+        temp_mod_filter=np.array(list(map(ut.integrate_filter,[xscale,]*ndim2,[temp,]*ndim2,filters[i]['wav'],filters[i]['trans'])))
 
         model_data.append(temp_mod_filter)
 
@@ -265,28 +265,30 @@ def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0)
 #        with open(fit_struct['sampler_file'],"rb") as f:
 #            sampler = pickle.load(f)
 #    else:
-    # create the backend
-    filename = fit_struct['sampler_file']
-    backend = emcee.backends.HDFBackend(filename)
-    # if restart:
-    #     print('continuing last run')
-    # else:
-    #     backend.reset(fit_struct['nwalkers'],ndim)
-    backend.reset(fit_struct['nwalkers'],ndim)
 
-    if Parallel == 0:
-        sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
-                                        args=(fit_struct, data_struct, filter_struct, model_struct, detection_mask), backend=backend)
-    else:
-        # multi-processing (pool created via pathos, allow to pickle the sampler)
-        tmp_pool = mp.ProcessingPool(Parallel)
-        sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
-                                        args=(data_struct, filter_struct, model_struct, detection_mask, fit_struct['redshift']),
-                                        pool=tmp_pool, backend=backend)
+    if fit_struct['fit_method']=='emcee': 
+    # create the backend for emcee
+        filename = fit_struct['sampler_file']
+        backend = emcee.backends.HDFBackend(filename)
+        # if restart:
+        #     print('continuing last run')
+        # else:
+        #     backend.reset(fit_struct['nwalkers'],ndim)
+        backend.reset(fit_struct['nwalkers'],ndim)
+    
+        if Parallel == 0:
+            sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
+                                            args=(fit_struct, data_struct, filter_struct, model_struct, detection_mask), backend=backend)
+        else:
+            # multi-processing (pool created via pathos, allow to pickle the sampler)
+            tmp_pool = mp.ProcessingPool(Parallel)
+            sampler = emcee.EnsembleSampler(fit_struct['nwalkers'], ndim, lnprob,
+                                            args=(data_struct, filter_struct, model_struct, detection_mask, fit_struct['redshift']),
+                                            pool=tmp_pool, backend=backend)
             
     # progress bar (work for multiprocess or single process)
 #    for sample in sampler.sample(pos,iterations=fit_source['nsteps'],progress=True):
-    if fit_struct['fit_method']=='emcee': 
+
         with tqdm(total=fit_struct['nsteps']) as pbar:
             for i, result in enumerate(sampler.sample(pos, iterations=fit_struct['nsteps'])):
                 pbar.update()
@@ -324,10 +326,13 @@ def fit_source(fit_struct, data_struct, filter_struct, model_struct, Parallel=0)
         def prior_func(theta,*args):
             return lnprior_un(theta,*args)
 
+        # sampler_un = ultranest.ReactiveNestedSampler(param_names, like_func, prior_func, resume=True, log_dir='outputs/tmp_ultra')
         sampler_un = ultranest.ReactiveNestedSampler(param_names, like_func, prior_func)
-        result=sampler_un.run()
+        sampler_un.run()
         print('Ultranest done!')
-        return result
+        with open(fit_struct['sampler_file'],'wb') as file:
+            dill.dump(sampler_un,file)
+        return sampler_un
     else:
         print('error, wrong fit_method provided')
         return 0

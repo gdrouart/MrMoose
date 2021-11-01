@@ -88,3 +88,22 @@ def find_stats_fit(sampler, models, fit_struct, data_struct):
         fit_struct['AICc'] = 2*ndim-2*fit_struct['best_lnL']+penalty_factor
     except:
         print("AICc cannot be calculated, too many parameters compared to data")
+
+def find_stats_fit_ultranest(sampler, models, fit_struct, data_struct):
+    """to finish"""
+    samples=np.array(sampler.results['weighted_samples']['points'])
+    weights = np.array(sampler.results['weighted_samples']['weights'])
+    cumsumweights = np.cumsum(weights)
+    mask = cumsumweights > 1e-4                   
+    
+    best_param = sampler.results['maximum_likelihood']['point']
+    perc_param = np.percentile(samples[mask,:], fit_struct['percentiles'], axis=0)
+    # add to the model structure
+    lb = 0
+    for i in range(len(models)):
+        ub = lb + models[i]['dim']
+        models[i]['bestfit'] = best_param[lb:ub]
+        models[i]['perc'] = [perc_param[j][lb:ub] for j in range(len(perc_param))]
+        lb += models[i]['dim']
+    # the float() is a trick to force saving the value in a variable and not only create a pointer
+    fit_struct['best_lnL'] = float(sampler.results['maximum_likelihood']['logl'])
