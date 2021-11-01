@@ -25,7 +25,7 @@ the user to adapt it more easily to their specific requirements. MrMoose is desi
 large freedom in a user-friendly fashion, but not being user-opaque. The code can therefore handle blended sources,
 large variation in resolution, and even upper limits consistenly. It also generates a series of ouputs
 allowing for an quick interpretation of the results. The code is using the emcee package, and saving the
-emcee sampler object (.pkl) allowing users to tranfer the output to personnal graphical interface. Since v1.3, Ultranest, 
+emcee sampler object (.pkl) allowing users to tranfer the output to personnal graphical interface. Since v2.0, Ultranest, 
 a much more efficient package for parameter space exploration is available. It is recommanded to prefer it over emcee
 given the significant gain in performance and behaviour. 
 
@@ -52,9 +52,9 @@ https://ui.adsabs.harvard.edu/abs/2018ascl.soft09015D/abstract
 * v1.2.0: update to Python 3
             - change in file structure
             - add the conda environement file for easier installation
-* v1.3.0: implementation of Ultranest sampler
+* v2.0.0: implementation of Ultranest sampler
             - refactoring of core functions for performance gain
-            - v1.3 with Ultranest is about 100 times faster compared to v1.2 emcee
+            - v2.0 with Ultranest is about 100 times faster compared to v1.2 emcee
 
 #############################
 # Installation instruction: #

@@ -30,10 +30,12 @@ reqs=['pathos>=0.2.8',
      'matplotlib>=3.4.2',
      'astropy>=4.2.1',
      'PyYAML>=5.4.1',
-     'h5py>=3.3.0']
+     'h5py>=3.3.0',
+     'ultranest>=3.3.0',
+     'cython>=0.29.24']
 
 setup(name="MrMoose",
-      version="1.2.0",
+      version="2.0.0",
       author="Guillaume Drouart, Theresa Falkendal",
       author_emal="guillaume.drouart@curtin.edu.au, tfalkend@eso.org",
       description="MrMoose, multi-resolution, multi-source SED fitting code, with examples",

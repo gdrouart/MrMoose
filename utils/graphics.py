@@ -680,44 +680,79 @@ def split_SED_fnu_emcee_spaghetti(sampler, data_struct, filter_struct, model_str
             ub = lb + model_struct[i_mod]['dim']
             tmp_color = cmap(i_mod / float(len(data_struct)))
 
-            # identify chains of good walkers (not stuck) and flag the rest
-            if AF_cut >= 0:
-                ind_walkers = np.where(sampler.acceptance_fraction > AF_cut)[0]
-            else:
-                ind_walkers = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
+            if fit_struct['fit_method'] == 'ultranest':
+                # isolating the good points of parameter space exploration
+                samples=np.array(sampler.results['weighted_samples']['points'])
+                weights = np.array(sampler.results['weighted_samples']['weights'])
+                cumsumweights = np.cumsum(weights)
+                mask = cumsumweights > 1e-4                   
 
-            # create the line list (segs) and feed in linecollection (improvement of perf for large numbers)
-            dim_prob = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * len(ind_walkers)
-            segs = np.zeros((dim_prob, dim_plot, 2))
+                dim_prob = np.arange(len(mask))[mask].size
+                segs = np.zeros((dim_prob, dim_plot, 2))
 
-            if fit_struct['redshift'][i_mod] >= 0:
-                for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
-                    for cpt_w, i_walkers in enumerate(ind_walkers):
-#                        y_spa = globals()[model_struct[i_mod]['func']]\
-#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                if fit_struct['redshift'][i_mod] >= 0:
+                    for cpt_s,i_steps in enumerate(np.arange(len(mask))[mask]):
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub], fit_struct['redshift'][i_mod])
-                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
-            else:
-                for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
-                    for cpt_w, i_walkers in enumerate(ind_walkers):
-#                        y_spa = globals()[model_struct[i_mod]['func']]\
-#                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                            (xscale, samples[mask, lb:ub][cpt_s], fit_struct['redshift'][i_mod])
+                        segs[cpt_s, :, 1] = y_spa
+                else: 
+                    for cpt_s,i_steps in enumerate(np.arange(len(mask))[mask]):
                         y_spa = globals()[model_struct[i_mod]['func']]\
-                            (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub])
-                        segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
-            segs[:, :, 0] = xscale
-            lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
-            axs[i_x, i_y].add_collection(lines)
+                            (xscale, samples[mask, lb:ub][cpt_s])
+                        segs[cpt_s, :, 1] = y_spa
+            
+                segs[:, :, 0] = xscale
+                lines = LineCollection(segs, colors=tmp_color, lw=0.1, alpha=0.1)
+                axs[i_x, i_y].add_collection(lines)
 
-            # overplot best fit
-            if fit_struct['redshift'][i_mod] >= 0:
-                y_bestfit = globals()[model_struct[i_mod]['func']]\
-                    (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+                # overplot the bestfit
+                if fit_struct['redshift'][i_mod] >= 0:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+                    axs[i_x, i_y].plot(xscale, y_bestfit, color='k', ls='-')
+                else:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'])
+ 
             else:
-                y_bestfit = globals()[model_struct[i_mod]['func']]\
-                    (xscale, model_struct[i_mod]['bestfit'])
-            axs[i_x, i_y].plot(xscale, y_bestfit, color='k', ls='-')
+                # identify chains of good walkers (not stuck) and flag the rest
+                if AF_cut >= 0:
+                    ind_walkers = np.where(sampler.acceptance_fraction > AF_cut)[0]
+                else:
+                    ind_walkers = np.where(sampler.acceptance_fraction > np.mean(sampler.acceptance_fraction)*0.5)[0]
+
+                # create the line list (segs) and feed in linecollection (improvement of perf for large numbers)
+                dim_prob = (fit_struct['nsteps'] - fit_struct['nsteps_cut']) * len(ind_walkers)
+                segs = np.zeros((dim_prob, dim_plot, 2))
+
+                if fit_struct['redshift'][i_mod] >= 0:
+                    for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                        for cpt_w, i_walkers in enumerate(ind_walkers):
+    #                        y_spa = globals()[model_struct[i_mod]['func']]\
+    #                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub], fit_struct['redshift'][i_mod])
+                            y_spa = globals()[model_struct[i_mod]['func']]\
+                                (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub], fit_struct['redshift'][i_mod])
+                            segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+                else:
+                    for cpt_s, i_steps in enumerate(range(fit_struct['nsteps_cut'], fit_struct['nsteps'])):
+                        for cpt_w, i_walkers in enumerate(ind_walkers):
+    #                        y_spa = globals()[model_struct[i_mod]['func']]\
+    #                            (xscale, sampler.chain[i_walkers, i_steps, lb:ub])
+                            y_spa = globals()[model_struct[i_mod]['func']]\
+                                (xscale, sampler.get_chain()[i_steps, i_walkers, lb:ub])
+                            segs[(cpt_s*len(ind_walkers)+cpt_w), :, 1] = y_spa
+                segs[:, :, 0] = xscale
+                lines = LineCollection(segs, colors=tmp_color, lw=0.2, alpha=0.1)
+                axs[i_x, i_y].add_collection(lines)
+
+                # overplot best fit
+                if fit_struct['redshift'][i_mod] >= 0:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'], fit_struct['redshift'][i_mod])
+                else:
+                    y_bestfit = globals()[model_struct[i_mod]['func']]\
+                        (xscale, model_struct[i_mod]['bestfit'])
+                axs[i_x, i_y].plot(xscale, y_bestfit, color='k', ls='-')
 
         # overplot the data
         axs[i_x, i_y].errorbar(filter_struct[i_arr]['center'][mask_d],
