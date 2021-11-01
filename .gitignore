@@ -8,7 +8,6 @@
 ehthumbs.db
 Thumbs.db
 *.profraw
-*.pdf
 
 # Packages #
 ############
@@ -45,3 +44,5 @@ build/*
 # File #
 ########
 *.fit
+*.pdf
+*.ipynb
